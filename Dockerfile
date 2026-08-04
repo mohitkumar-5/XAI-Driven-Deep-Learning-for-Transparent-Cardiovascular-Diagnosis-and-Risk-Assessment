@@ -26,6 +26,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files and built frontend dist
+RUN mkdir -p static
 COPY AI ./AI
 COPY static ./static
 COPY templates ./templates
