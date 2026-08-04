@@ -23,15 +23,25 @@ data/
 *.csv
 scratch/
 
-# Application Logs & Offline Plots (No static plot images pushed to GitHub)
+# Application Logs & Unused Static Images (Removes unused UI decorative PNGs)
 *.log
 AI/logs/
-AI/saved_models/*.png
+static/images/
+
+# Unused Model Weights & Duplicate Checkpoints in saved_models
 AI/saved_models/*.pth
 AI/saved_models/arrhythmia_*
 AI/saved_models/model.pkl
 AI/saved_models/scaler.pkl
 AI/saved_models/shap_explainer.pkl
+AI/saved_models/*_m1.png
+AI/saved_models/*_m2.png
+
+# Keep Key Training & Signal Filtering Evaluation Plots on GitHub:
+!AI/saved_models/roc_curve.png
+!AI/saved_models/confusion_matrix.png
+!AI/saved_models/shap_importance.png
+!AI/saved_models/sample_ecg_plot.png
 
 # Node / React Frontend Dependencies & Build Caches
 frontend/node_modules/
