@@ -1357,7 +1357,7 @@ export default function App() {
             <div className="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-2.5 md:p-5 gap-3 md:gap-4 max-w-full w-full">
               {/* Left panel forms */}
               <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 overflow-y-auto md:overflow-hidden max-w-full w-full">
-                <div className="w-full lg:w-72 overflow-y-auto flex flex-col gap-3 shrink-0 max-h-[38vh] lg:max-h-full">
+                <div className="w-full lg:w-72 flex flex-col gap-3 shrink-0 lg:overflow-y-auto lg:max-h-full">
 
                   {compSection === 'vitals' && (
                     <div className={tCard + ' p-4 flex flex-col gap-3'} style={{ background: cardBg, border: `1px solid ${border}` }}>
