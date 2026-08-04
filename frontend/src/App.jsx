@@ -944,7 +944,7 @@ export default function App() {
 
         {/* PAGE: DASHBOARD */}
         {activePage === 'dashboard' && (
-          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          <div className="flex flex-col md:flex-row flex-1 w-full overflow-y-auto md:overflow-hidden">
             {/* Dashboard Left Sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
               className={`flex flex-col gap-3 p-3 shrink-0 transition-all duration-300 w-full md:w-[220px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
@@ -1326,7 +1326,7 @@ export default function App() {
              PAGE: COMPANION
         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         {activePage === 'companion' && (
-          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          <div className="flex flex-col md:flex-row flex-1 w-full overflow-y-auto md:overflow-hidden">
             {/* Companion left sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
               className={`flex flex-col gap-2 p-3 shrink-0 transition-all duration-300 w-full md:w-[220px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
@@ -1354,9 +1354,9 @@ export default function App() {
             </aside>
 
             {/* Companion center panel */}
-            <div className="flex flex-col flex-1 overflow-hidden p-2 md:p-5 gap-3 md:gap-4 max-w-full h-full">
+            <div className="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-2.5 md:p-5 gap-3 md:gap-4 max-w-full w-full">
               {/* Left panel forms */}
-              <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 overflow-hidden max-w-full h-full">
+              <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 overflow-y-auto md:overflow-hidden max-w-full w-full">
                 <div className="w-full lg:w-72 overflow-y-auto flex flex-col gap-3 shrink-0 max-h-[38vh] lg:max-h-full">
 
                   {compSection === 'vitals' && (
