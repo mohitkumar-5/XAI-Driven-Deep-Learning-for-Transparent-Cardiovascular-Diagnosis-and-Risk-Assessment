@@ -13,7 +13,7 @@ ENV/
 .env.local
 .env.*.local
 
-# Raw Dataset Binaries & Large Files (Dataset instructions in AI/data/README.md)
+# Raw Datasets & Binary Files
 AI/data/*.mat
 AI/data/*.dat
 AI/data/*.hea
@@ -23,11 +23,9 @@ data/
 *.csv
 scratch/
 
-# Application Logs
+# Application Logs & Offline Plots (No static plot images pushed to GitHub)
 *.log
 AI/logs/
-
-# Unused Model Checkpoints & Offline Plots in saved_models (Keeps repository lean & clean)
 AI/saved_models/*.png
 AI/saved_models/*.pth
 AI/saved_models/arrhythmia_*
