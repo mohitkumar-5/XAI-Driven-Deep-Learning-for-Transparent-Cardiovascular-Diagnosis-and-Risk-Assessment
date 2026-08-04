@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  deepcardio-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deepcardio_xai
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    volumes:
+      - ./data:/app/data

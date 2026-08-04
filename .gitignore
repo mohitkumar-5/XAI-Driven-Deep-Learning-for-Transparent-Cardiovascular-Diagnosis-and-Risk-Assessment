@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment & Secret files (Keep API keys safe)
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Data & Scratch directories
+data/
+*.log
+*.csv
+scratch/
+
+# Node / React Frontend Dependencies & Build Caches
+frontend/node_modules/
+frontend/.vite/
+frontend/dist-ssr/
+frontend/*.local
+
+# OS / IDE Junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.tmp

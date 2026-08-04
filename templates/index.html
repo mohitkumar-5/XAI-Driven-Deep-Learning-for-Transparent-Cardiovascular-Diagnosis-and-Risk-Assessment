@@ -1,0 +1,3405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepCardio-XAI | AI Powered Cardiac Health Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Three.js for 3D Drone Accelerometer visualizer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN SYSTEM (NAVY GRAPHITE & NEON GLOW)
+       ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg-dark:    #03050c;
+      --bg-base:    #060a15;
+      --bg-sidebar: #050812;
+      --bg-card:    rgba(9, 14, 28, 0.85);
+      --border:     rgba(255, 255, 255, 0.05);
+      
+      --red:        #ff3b5c;
+      --cyan:       #00d4ff;
+      --amber:      #ffb800;
+      --purple:     #a855f7;
+      --green:      #00e5a0;
+      
+      --text-main:  #f3f4f6;
+      --text-muted: #8899b8;
+      --text-dark:  #4a5878;
+      
+      --font-sans:  'Plus Jakarta Sans', sans-serif;
+      --font-mono:  'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 5% 5%, rgba(0, 212, 255, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 95% 95%, rgba(168, 85, 247, 0.03) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       GLOBAL WEBSITE NAV HEADER
+       ═══════════════════════════════════════════════════════════ */
+    #global-header {
+      height: 64px;
+      width: 100%;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      flex-shrink: 0;
+      z-index: 1000;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-brand .brand-icon {
+      font-size: 22px;
+      filter: drop-shadow(0 0 10px var(--red));
+    }
+    .header-brand .brand-text h2 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .header-brand .brand-text span {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .header-nav-links {
+      display: flex;
+      gap: 12px;
+    }
+    .nav-link {
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+    }
+    .nav-link:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .nav-link.active {
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.15);
+    }
+    .header-doctor {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .header-dr-meta {
+      text-align: right;
+    }
+    .header-dr-meta h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+    .header-dr-meta span {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .header-dr-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background-size: cover;
+      background-position: center;
+    }
+    #main-page-container {
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 64px);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-view {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+    #page-dashboard {
+      display: flex;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════
+       HOME PAGE LANDING VIEW
+       ═══════════════════════════════════════════════════════════ */
+    .home-container {
+      padding: 40px 60px;
+      overflow-y: auto;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 45px;
+    }
+    .home-hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      align-items: center;
+      gap: 40px;
+      background: linear-gradient(135deg, rgba(9, 15, 32, 0.8), rgba(15, 23, 42, 0.4));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .hero-text h1 {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.25;
+      background: linear-gradient(135deg, #fff 40%, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .hero-text p {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      max-width: 600px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+    }
+    .hero-btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+    .hero-btn-primary {
+      background: linear-gradient(135deg, var(--cyan), #00b4d8);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+    .hero-btn-primary:hover {
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+      transform: translateY(-2px);
+    }
+    .hero-btn-secondary {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(124, 58, 237, 0.8));
+      color: #fff;
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+    }
+    .hero-btn-secondary:hover {
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+      transform: translateY(-2px);
+    }
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .hero-visual img {
+      height: 180px;
+      filter: drop-shadow(0 0 20px rgba(255, 59, 92, 0.3));
+      animation: heartbeat 2s infinite alternate;
+    }
+    @keyframes heartbeat {
+      0% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 59, 92, 0.3)); }
+      30% { transform: scale(1.08); filter: drop-shadow(0 0 30px rgba(255, 59, 92, 0.5)); }
+      60% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 59, 92, 0.3)); }
+      100% { transform: scale(1.04); filter: drop-shadow(0 0 25px rgba(255, 59, 92, 0.4)); }
+    }
+    .home-features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .feat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    .feat-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-4px);
+    }
+    .feat-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .feat-card h3 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .feat-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.01);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 212, 255, 0.15);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 212, 255, 0.35);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════════════════════════ */
+    #sidebar {
+      width: 230px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      padding: 16px 12px;
+      justify-content: space-between;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding-left: 8px;
+    }
+    .brand-icon {
+      font-size: 20px;
+      filter: drop-shadow(0 0 8px rgba(255, 59, 92, 0.5));
+    }
+    .brand-text h2 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .brand-text span {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .sidebar-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .menu-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+    }
+    .menu-item.active {
+      background: rgba(255, 59, 92, 0.08);
+      color: var(--red);
+      border: 1px solid rgba(255, 59, 92, 0.15);
+    }
+    .menu-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Patient Info Card on Sidebar */
+    .sidebar-patient-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .patient-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+    .patient-field {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10.5px;
+      margin-bottom: 6px;
+    }
+    .patient-field:last-child {
+      margin-bottom: 0;
+    }
+    .patient-field span {
+      color: var(--text-muted);
+    }
+    .patient-field strong {
+      color: #fff;
+    }
+
+    /* Sidebar Footer Brand */
+    .sidebar-footer {
+      text-align: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer-logo {
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
+    .sidebar-footer p {
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .sidebar-footer span {
+      font-size: 8.5px;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       MAIN VIEW
+       ═══════════════════════════════════════════════════════════ */
+    #main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      max-width: calc(100vw - 230px);
+    }
+
+    /* Header topbar */
+    #topbar {
+      height: 60px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 14, 28, 0.4);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      position: relative;
+    }
+    .status-dot.active-live {
+      background: var(--green);
+    }
+    .status-dot.active-live::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: rgba(0, 229, 160, 0.3);
+      animation: pulse-ring 2s infinite;
+    }
+    .status-dot.active-sim {
+      background: var(--amber);
+    }
+    .status-dot.active-sim::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: rgba(255, 184, 0, 0.3);
+      animation: pulse-ring 2s infinite;
+    }
+    .status-dot.active-offline {
+      background: var(--red);
+    }
+    .status-dot.active-offline::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: rgba(255, 59, 92, 0.3);
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .status-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .status-sub {
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+    
+    /* Device IP Input inline in header */
+    .topbar-ip-config {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 4px 10px;
+    }
+    .topbar-ip-config span {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .topbar-ip-input {
+      background: transparent;
+      border: none;
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 110px;
+      outline: none;
+      text-align: center;
+    }
+    
+    .topbar-clock {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .topbar-clock strong {
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+    .topbar-doctor {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .topbar-doctor-meta {
+      text-align: right;
+    }
+    .topbar-doctor-meta h4 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .topbar-doctor-meta p {
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+    .topbar-doctor-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Content view area */
+    #content-view-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      max-width: 100%;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ROW 1: VITAL CARDS
+       ═══════════════════════════════════════════════════════════ */
+    .vitals-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .vital-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px 10px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 94px;
+    }
+    .vital-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+    .vital-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .vital-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .vital-icon {
+      font-size: 14px;
+    }
+    .vital-value-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .vital-value {
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .vital-unit {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+    .vital-status {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .vital-sparkline {
+      width: 100%;
+      height: 20px;
+    }
+
+    /* Vital Card Themes */
+    .v-red .vital-value { color: var(--red); }
+    .v-red .vital-status { color: rgba(255, 59, 92, 0.75); }
+    .v-red .vital-accent { background: linear-gradient(90deg, var(--red), transparent); }
+
+    .v-cyan .vital-value { color: var(--cyan); }
+    .v-cyan .vital-status { color: rgba(0, 212, 255, 0.75); }
+    .v-cyan .vital-accent { background: linear-gradient(90deg, var(--cyan), transparent); }
+
+    .v-amber .vital-value { color: var(--amber); }
+    .v-amber .vital-status { color: rgba(255, 184, 0, 0.75); }
+    .v-amber .vital-accent { background: linear-gradient(90deg, var(--amber), transparent); }
+
+    .v-purple .vital-value { color: var(--purple); }
+    .v-purple .vital-status { color: rgba(168, 85, 247, 0.75); }
+    .v-purple .vital-accent { background: linear-gradient(90deg, var(--purple), transparent); }
+
+    .v-green .vital-value { color: var(--green); font-size: 20px; }
+    .v-green .vital-status { color: rgba(0, 229, 160, 0.75); }
+    .v-green .vital-accent { background: linear-gradient(90deg, var(--green), transparent); }
+
+    /* ═══════════════════════════════════════════════════════════
+       ROW 2: ECG & LORA
+       ═══════════════════════════════════════════════════════════ */
+    .mid-row {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-badge {
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2.5px 6px;
+      border-radius: 12px;
+    }
+    .badge-ecg-live {
+      background: rgba(255, 59, 92, 0.1);
+      color: var(--red);
+      border: 1px solid rgba(255, 59, 92, 0.2);
+    }
+    .badge-lora-active {
+      background: rgba(0, 229, 160, 0.1);
+      color: var(--green);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+    }
+    .ecg-canvas-wrap {
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      flex: 1;
+    }
+    #ecgCanvas {
+      width: 100%;
+      height: 140px;
+      background: #000;
+      border-radius: 6px;
+      display: block;
+    }
+    .ecg-footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5px;
+    }
+    .ecg-metrics {
+      display: flex;
+      gap: 12px;
+      color: var(--text-muted);
+    }
+    .ecg-metrics strong {
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+
+    /* LoRa Panel */
+    .lora-body {
+      padding: 12px 14px;
+    }
+    .lora-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .lora-row:last-of-type {
+      border-bottom: none;
+    }
+    .lora-lbl {
+      color: var(--text-muted);
+    }
+    .lora-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .lora-stream-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 10px;
+      height: 72px;
+      overflow-y: auto;
+    }
+    .lora-stream-title {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+    
+    /* LoRa Floating Slide Animation */
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(8px); filter: drop-shadow(0 0 5px var(--green)); }
+      to { opacity: 0.85; transform: translateY(0); filter: none; }
+    }
+    .lora-line {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: var(--green);
+      line-height: 1.4;
+      animation: floatIn 0.35s ease-out forwards;
+      margin-bottom: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ROW 3: TRENDS & ACCELEROMETER
+       ═══════════════════════════════════════════════════════════ */
+    .trends-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .trend-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .trend-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .trend-val {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 2px 0 6px;
+    }
+    
+    /* Static premium indicator bars instead of running charts */
+    .trend-bar-wrapper {
+      height: 6px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .trend-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .trend-caption {
+      font-size: 9px;
+      color: var(--text-dark);
+      margin-top: 4px;
+    }
+
+    /* Accelerometer motion card with Three.js drone canvas */
+    .motion-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .motion-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    #drone-canvas-container {
+      width: 100%;
+      height: 52px;
+      position: relative;
+      overflow: hidden;
+    }
+    .motion-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .motion-box {
+      background: rgba(0,0,0,0.25);
+      border-radius: 4px;
+      padding: 3px;
+      text-align: center;
+    }
+    .motion-axis {
+      font-size: 8px;
+      font-weight: 700;
+      margin-bottom: 1px;
+    }
+    .motion-val {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ROW 4: AI RISK + HISTORY + ALERTS
+       ═══════════════════════════════════════════════════════════ */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      gap: 10px;
+    }
+    .ai-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 154px;
+    }
+    .ai-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .ai-risk-lbl {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--green);
+    }
+    .ai-risk-lbl.moderate {
+      color: var(--amber);
+    }
+    .ai-risk-lbl.high {
+      color: var(--red);
+    }
+    .ai-risk-pct {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .ai-slider-track {
+      height: 5px;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+      border-radius: 3px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .ai-slider-marker {
+      position: absolute;
+      top: -3px;
+      width: 4px;
+      height: 11px;
+      background: #fff;
+      border-radius: 1px;
+      transform: translateX(-50%);
+      box-shadow: 0 0 4px #fff;
+      transition: left 0.3s ease;
+    }
+    .ai-slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5px;
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+    .ai-action-btn {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(124, 58, 237, 0.8));
+      color: #fff;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+      transition: all 0.2s;
+    }
+    .ai-action-btn:hover {
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* History table visual log instead of running multiline chart */
+    .history-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      height: 154px;
+      display: flex;
+      flex-direction: column;
+    }
+    .history-header {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .history-log-table-wrap {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .history-log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    .history-log-table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-log-table td {
+      padding: 4px;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      font-family: var(--font-mono);
+    }
+
+    /* Alerts log card */
+    .alerts-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 154px;
+    }
+    .alerts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .alerts-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .alerts-view-all {
+      font-size: 9px;
+      color: var(--cyan);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .alerts-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+    }
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .alert-row:last-child {
+      border-bottom: none;
+    }
+    .alert-icon {
+      font-size: 12px;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .alert-details {
+      flex: 1;
+    }
+    .alert-name {
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .alert-time {
+      font-size: 8.5px;
+      color: var(--text-muted);
+    }
+    .alert-val {
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PATIENTS PAGE REGISTRY VIEW
+       ═══════════════════════════════════════════════════════════ */
+    .patients-container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      height: 100%;
+    }
+    .patients-form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-group label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .form-input {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 12.5px;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: rgba(0, 212, 255, 0.35);
+      background: rgba(0, 212, 255, 0.02);
+    }
+    .btn-action {
+      background: linear-gradient(135deg, var(--red), rgba(255,59,92,0.85));
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .patients-table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .p-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .p-table th {
+      text-align: left;
+      padding: 10px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .p-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .btn-select-p {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: var(--cyan);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-select-p:hover {
+      background: rgba(0, 212, 255, 0.2);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOOTER BAR
+       ═══════════════════════════════════════════════════════════ */
+    #footer-bar {
+      height: 32px;
+      background: var(--bg-sidebar);
+      border-top: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .footer-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .footer-green {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       AI INSIGHTS MODAL WITH SHAP
+       ═══════════════════════════════════════════════════════════ */
+    #ai-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #ai-modal.open {
+      display: flex;
+    }
+    .ai-modal-box {
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #0b1122;
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 0 50px rgba(168, 85, 247, 0.1);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .modal-close:hover {
+      background: rgba(255, 59, 92, 0.15);
+      color: var(--red);
+      border-color: rgba(255, 59, 92, 0.25);
+    }
+    .progress-wrap {
+      margin-bottom: 20px;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+    .progress-bar-track {
+      height: 4px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--cyan));
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .modal-content-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+    }
+    .modal-sec-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .shap-attributions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .shap-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .shap-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .shap-label { color: #fff; }
+    .shap-val-pos { color: var(--red); font-family: var(--font-mono); font-weight: 700; }
+    .shap-val-neg { color: var(--green); font-family: var(--font-mono); font-weight: 700; }
+    .shap-track {
+      height: 5px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .shap-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.8s cubic-bezier(0.1, 1, 0.1, 1);
+    }
+    .fill-pos {
+      background: linear-gradient(90deg, var(--red), #ff7b00);
+    }
+    .fill-neg {
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+    }
+    .clinical-message-box {
+      background: rgba(0, 212, 255, 0.03);
+      border: 1px solid rgba(0, 212, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .modal-visual-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .brain-visual {
+      text-align: center;
+      padding: 10px 0;
+    }
+    .brain-visual img {
+      height: 120px;
+      filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.2));
+    }
+    .dis-prob-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .dpb-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .dpb-name { width: 110px; color: var(--text-main); }
+    .dpb-track { flex: 1; height: 5px; background: rgba(255,255,255,0.03); border-radius: 2.5px; overflow: hidden; }
+    .dpb-fill { height: 100%; border-radius: 2.5px; }
+    .dpb-val { width: 30px; text-align: right; font-family: var(--font-mono); font-weight: 700; }
+
+    /* ═══════════════════════════════════════════════════════════
+       CLINICIAN SECURITY PIN GATE MODAL (CORRECTLY CENTERED)
+       ═══════════════════════════════════════════════════════════ */
+    #doctor-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 5, 12, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #doctor-modal.open {
+      display: flex;
+    }
+    .dm-card {
+      width: 380px;
+      background: #090f20;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 0 50px rgba(0, 212, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .dm-card h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+    }
+    .dm-card p {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: -8px;
+      margin-bottom: 6px;
+    }
+    .dm-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .dm-field label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .dm-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .dm-input:focus {
+      border-color: var(--cyan);
+      background: rgba(0, 212, 255, 0.02);
+    }
+    .dm-error {
+      color: var(--red);
+      font-size: 11px;
+      text-align: center;
+      display: none;
+    }
+    .dm-error.visible {
+      display: block;
+    }
+    .dm-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .dm-btn {
+      flex: 1;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .dm-btn-primary {
+      background: linear-gradient(135deg, var(--red), #e11d48);
+      color: #fff;
+    }
+    .dm-btn-ghost {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    /* AI Health Companion Styles */
+    .companion-container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      height: calc(100vh - 120px);
+    }
+    .companion-left {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      height: 100%;
+    }
+    .companion-right {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .comp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .comp-card h3 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .comp-form-group {
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .comp-form-group label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .comp-form-group input {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .comp-form-group input:focus {
+      border-color: var(--cyan);
+    }
+    .comp-btn-sec {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .comp-btn-sec:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .chat-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .chat-status-indicator {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--cyan);
+      border-radius: 4px;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-bubble {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .chat-bubble.assistant {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+    .chat-bubble.user {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.6), rgba(124, 58, 237, 0.6));
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .chat-input-area {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-recording-banner {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 11px;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-mic {
+      animation: mic-glow 1.5s infinite alternate;
+    }
+    @keyframes mic-glow {
+      0% { transform: scale(1); filter: drop-shadow(0 0 1px var(--red)); }
+      100% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--red)); }
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-row input {
+      flex: 1;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .chat-input-row input:focus {
+      border-color: var(--cyan);
+    }
+    .chat-mic-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .chat-mic-btn.recording {
+      background: var(--red) !important;
+      border-color: var(--red) !important;
+      box-shadow: 0 0 12px var(--red);
+    }
+    .chat-send-btn {
+      background: linear-gradient(135deg, var(--cyan), #00b4d8);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .chat-send-btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═════════════════════════════════════════════════════════
+       GLOBAL HEADER NAVIGATION BAR
+       ═════════════════════════════════════════════════════════ -->
+  <div id="global-header">
+    <div class="header-brand">
+      <span class="brand-icon">❤️</span>
+      <div class="brand-text">
+        <h2>DeepCardio-XAI</h2>
+        <span>Advanced Cardiac Intelligence</span>
+      </div>
+    </div>
+    
+    <div class="header-nav-links">
+      <div class="nav-link active" id="nav-link-home" onclick="showPage('home')">🏠 Home</div>
+      <div class="nav-link" id="nav-link-dashboard" onclick="showPage('dashboard')">📈 Live Dashboard</div>
+      <div class="nav-link" id="nav-link-companion" onclick="showPage('companion')">💬 AI Companion</div>
+    </div>
+    
+    <div class="header-doctor" onclick="openDoctorAuthModal()">
+      <div class="header-dr-meta">
+        <h4 id="header-dr-name">Dr. Arjun Mehta</h4>
+        <span id="header-dr-spec">Cardiologist</span>
+      </div>
+      <div class="header-dr-avatar" id="header-dr-avatar">🔒</div>
+    </div>
+  </div>
+
+  <div id="main-page-container">
+    
+    <!-- ==================== PAGE: HOME ==================== -->
+    <div id="page-home" class="page-view">
+      <div class="home-container">
+        <!-- Hero banner -->
+        <div class="home-hero">
+          <div class="hero-text">
+            <h1>Advanced Medical AI Diagnostics<br>& Cardiac Telemetry</h1>
+            <p>Welcome to DeepCardio-XAI. This platform combines real-time raw ECG signal acquisition, 1D CNN + BiLSTM deep learning arrhythmia classification, local validation transfer learning, and interactive voice virtual assistant nodes for next-generation clinical screening.</p>
+            <div class="hero-actions">
+              <button class="hero-btn hero-btn-primary" onclick="showPage('dashboard')">
+                📈 Launch Live Monitor
+              </button>
+              <button class="hero-btn hero-btn-secondary" onclick="showPage('companion')">
+                💬 Talk to AI Companion
+              </button>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <img src="/static/images/neon_heart.png" alt="Cardio heart visual node" onerror="this.src='https://raw.githubusercontent.com/FortAwesome/Font-Awesome/master/svgs/solid/heart-pulse.svg';">
+          </div>
+        </div>
+
+        <!-- Features grids -->
+        <div class="home-features">
+          <div class="feat-card">
+            <div class="feat-icon">⚡</div>
+            <h3>Real-Time Ingestion</h3>
+            <p>Connect your ESP32 hardware using Local Wifi polling or AWS HTTPS push nodes for zero-lag telemetry streaming.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🧠</div>
+            <h3>1D CNN + BiLSTM</h3>
+            <p>Runs a deep time-series neural network directly in ONNX Runtime for high-speed cardiac anomaly classification.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🔍</div>
+            <h3>Explainable AI (XAI)</h3>
+            <p>Visual 1D Grad-CAM waveform activation maps and local SHAP explanations highlighting critical clinical diagnostics.</p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🎙️</div>
+            <h3>Voice Health Agent</h3>
+            <p>Ask medical questions via Whisper voice transcription and receive clinical spoken audio using HF Text-to-Speech nodes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: DASHBOARD ==================== -->
+    <div id="page-dashboard" class="page-view" style="display: none;">
+
+      <!-- ═════════════════════════════════════════════════════════
+           SIDEBAR
+           ═════════════════════════════════════════════════════════ -->
+      <div id="sidebar">
+        <div>
+          <div class="sidebar-brand">
+            <span class="brand-icon">❤️</span>
+            <div class="brand-text">
+              <h2>DeepCardio-XAI</h2>
+              <span>AI Cardiac Monitor</span>
+            </div>
+          </div>
+
+          <div class="sidebar-menu">
+            <div class="menu-item active" id="menu-link-dashboard" onclick="switchTab('dashboard')"><span class="menu-icon">🏠</span>Dashboard</div>
+            <div class="menu-item" id="menu-link-patients" onclick="switchTab('patients')"><span class="menu-icon">👤</span>Patients</div>
+            <div class="menu-item" id="menu-link-live-monitor" onclick="switchTab('live-monitor')"><span class="menu-icon">📈</span>Live Monitor</div>
+            <div class="menu-item" id="menu-link-history" onclick="switchTab('history')"><span class="menu-icon">🕐</span>History</div>
+            <div class="menu-item" id="menu-link-analytics" onclick="switchTab('analytics')"><span class="menu-icon">📊</span>Analytics</div>
+            <div class="menu-item" id="menu-link-ai-insights" onclick="openAiModal()"><span class="menu-icon">🧠</span>AI Insights</div>
+            <div class="menu-item" id="menu-link-alerts" onclick="switchTab('alerts')"><span class="menu-icon">🔔</span>Alerts</div>
+            <div class="menu-item" id="menu-link-reports" onclick="switchTab('reports')"><span class="menu-icon">📋</span>Reports</div>
+            <div class="menu-item" id="menu-link-settings" onclick="switchTab('settings')"><span class="menu-icon">⚙️</span>Settings</div>
+          </div>
+        </div>
+
+    <!-- Patient Info Panel -->
+    <div>
+      <div class="sidebar-patient-card">
+        <div class="patient-card-title">Patient Info</div>
+        <div class="patient-field"><span>Patient ID</span><strong id="p-id">DCX20250521</strong></div>
+        <div class="patient-field"><span>Name</span><strong id="p-name">Ramesh Verma</strong></div>
+        <div class="patient-field"><span>Age/Gender</span><strong id="p-age">45 Y / Male</strong></div>
+        <div class="patient-field"><span>Device ID</span><strong id="p-device">DCX-LO-9821</strong></div>
+        <div class="patient-field"><span>Last Sync</span><strong id="p-sync">--</strong></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-logo">❤️</div>
+        <p>DeepCardio-XAI</p>
+        <span>v1.0.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════
+       MAIN VIEW WRAPPER
+       ═════════════════════════════════════════════════════════ -->
+  <div id="main-wrapper">
+    
+    <!-- Topbar -->
+    <div id="topbar">
+      <div class="topbar-status">
+        <div class="status-dot active-offline" id="topbar-status-dot"></div>
+        <div class="topbar-status-meta">
+          <h3 id="topbar-status-label">DEVICE OFFLINE</h3>
+          <p id="topbar-status-sub">No hardware connection detected</p>
+        </div>
+      </div>
+
+      <!-- Single Device IP Address Config -->
+      <div class="topbar-ip-config">
+        <span>Device IP:</span>
+        <input class="topbar-ip-input" id="esp32-ip-address" type="text" placeholder="10.140.171.187" value="10.140.171.187" onchange="updateEsp32IpAddress()">
+      </div>
+
+      <div class="topbar-clock">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <strong id="topbar-time">--:--:--</strong>
+        <span style="opacity: 0.2">|</span>
+        <span id="topbar-date">-- --, ----</span>
+      </div>
+
+      <div class="topbar-doctor" onclick="openDoctorAuthModal()">
+        <div class="topbar-doctor-meta">
+          <h4 id="topbar-dr-name">Dr. Arjun Mehta</h4>
+          <p id="topbar-dr-spec">Cardiologist</p>
+        </div>
+        <div class="topbar-doctor-avatar" id="topbar-dr-avatar">🔒</div>
+      </div>
+    </div>
+
+    <!-- Multi-Tab Workspaces -->
+    <div id="content-view-area">
+
+      <!-- ==================== TAB: DASHBOARD ==================== -->
+      <div id="tab-dashboard">
+        
+        <!-- Row 1: Vitals -->
+        <div class="vitals-row">
+          <div class="vital-card v-red">
+            <div class="vital-accent"></div>
+            <div class="vital-header"><span class="vital-label">Heart Rate</span><span class="vital-icon">❤️</span></div>
+            <div class="vital-value-wrap"><span class="vital-value" id="val-bpm">--</span><span class="vital-unit">bpm</span></div>
+            <div class="vital-status" id="val-bpm-status">OFFLINE</div>
+            <canvas class="vital-sparkline" id="spark-bpm"></canvas>
+          </div>
+
+          <div class="vital-card v-cyan">
+            <div class="vital-accent"></div>
+            <div class="vital-header"><span class="vital-label">SpO₂ Blood Oxygen</span><span class="vital-icon">💧</span></div>
+            <div class="vital-value-wrap"><span class="vital-value" id="val-spo2">--</span><span class="vital-unit">%</span></div>
+            <div class="vital-status" id="val-spo2-status">OFFLINE</div>
+            <canvas class="vital-sparkline" id="spark-spo2"></canvas>
+          </div>
+
+          <div class="vital-card v-amber">
+            <div class="vital-accent"></div>
+            <div class="vital-header"><span class="vital-label">Temperature</span><span class="vital-icon">🌡️</span></div>
+            <div class="vital-value-wrap"><span class="vital-value" id="val-temp">--</span><span class="vital-unit">°C</span></div>
+            <div class="vital-status" id="val-temp-status">OFFLINE</div>
+            <canvas class="vital-sparkline" id="spark-temp"></canvas>
+          </div>
+
+          <div class="vital-card v-purple">
+            <div class="vital-accent"></div>
+            <div class="vital-header"><span class="vital-label">Stress (GSR)</span><span class="vital-icon">🟣</span></div>
+            <div class="vital-value-wrap"><span class="vital-value" id="val-gsr">--</span><span class="vital-unit">µS</span></div>
+            <div class="vital-status" id="val-gsr-status">OFFLINE</div>
+            <canvas class="vital-sparkline" id="spark-gsr"></canvas>
+          </div>
+
+          <div class="vital-card v-green">
+            <div class="vital-accent"></div>
+            <div class="vital-header"><span class="vital-label">Activity</span><span class="vital-icon">🏃</span></div>
+            <div class="vital-value-wrap"><span class="vital-value" id="val-activity">--</span><span class="vital-unit"></span></div>
+            <div class="vital-status" id="val-activity-status">OFFLINE</div>
+            <canvas class="vital-sparkline" id="spark-motion"></canvas>
+          </div>
+        </div>
+
+        <!-- Row 2: ECG & LORA -->
+        <div class="mid-row">
+          <div class="card-box">
+            <div class="card-header">
+              <div class="card-title"><span style="color:var(--red)">❤️</span> Live ECG Waveform</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="card-badge" id="ecg-leads-badge" style="background:rgba(255,255,255,0.03); color:var(--text-muted)">● WAITING...</span>
+              </div>
+            </div>
+            <div class="ecg-canvas-wrap">
+              <canvas id="ecgCanvas"></canvas>
+            </div>
+            <div class="ecg-footer">
+              <span style="color:var(--text-muted)">Signal Quality: <strong style="color:var(--text-muted)" id="val-ecg-quality">No connection</strong></span>
+              <div class="ecg-metrics">
+                <span>HRV: <strong id="val-ecg-hrv">--</strong> ms</span>
+                <span>R-R: <strong id="val-ecg-rr">--</strong> ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LoRa packet monitor -->
+          <div class="card-box">
+            <div class="card-header">
+              <div class="card-title"><span style="color:var(--cyan)">📡</span> LoRa Packet Transmission</div>
+              <span class="card-badge" id="val-lora-badge" style="background:rgba(255,255,255,0.03); color:var(--text-muted)">○ Standby</span>
+            </div>
+            <div class="lora-body">
+              <div class="lora-row"><span class="lora-lbl">Packets Sent</span><strong class="lora-val" id="val-lora-tx">--</strong></div>
+              <div class="lora-row"><span class="lora-lbl">RSSI / SNR</span><strong class="lora-val" id="val-lora-signal">--</strong></div>
+              <span class="lora-freq-tag" style="font-size:9.5px; color:var(--text-dark);">📡 433 MHz Telemetry Loop</span>
+              <div class="lora-stream-box">
+                <div class="lora-stream-title">Continuous Floating Packets</div>
+                <div class="lora-stream-lines" id="lora-packet-stream">
+                  <div class="lora-line" style="color:var(--text-dark)">Waiting for telemetry transmission...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Trends & Accelerometer -->
+        <div class="trends-row">
+          <div class="trend-card">
+            <div class="trend-lbl" style="color:var(--cyan)">SpO₂ Perfusion</div>
+            <div class="trend-val" style="color:var(--cyan)" id="val-trend-spo2">--%</div>
+            <div class="trend-bar-wrapper">
+              <div class="trend-bar-fill" id="fill-trend-spo2" style="width: 0%; color: var(--cyan);"></div>
+            </div>
+            <div class="trend-caption">Oxygen saturation index status</div>
+          </div>
+          <div class="trend-card">
+            <div class="trend-lbl" style="color:var(--purple)">Stress (GSR)</div>
+            <div class="trend-val" style="color:var(--purple)" id="val-trend-gsr">-- µS</div>
+            <div class="trend-bar-wrapper">
+              <div class="trend-bar-fill" id="fill-trend-gsr" style="width: 0%; color: var(--purple);"></div>
+            </div>
+            <div class="trend-caption">Skin conductance arousal reading</div>
+          </div>
+          <div class="trend-card">
+            <div class="trend-lbl" style="color:var(--amber)">Temperature</div>
+            <div class="trend-val" style="color:var(--amber)" id="val-trend-temp">-- °C</div>
+            <div class="trend-bar-wrapper">
+              <div class="trend-bar-fill" id="fill-trend-temp" style="width: 0%; color: var(--amber);"></div>
+            </div>
+            <div class="trend-caption">Core metabolic temperature status</div>
+          </div>
+          
+          <!-- Motion / Accelerometer with Three.js 3D Drone Canvas -->
+          <div class="motion-card">
+            <div class="motion-title">🏃 Motion / Accelerometer (3D Drone)</div>
+            <div id="drone-canvas-container"></div>
+            <div class="motion-grid">
+              <div class="motion-box"><div class="motion-axis" style="color:var(--red)">X</div><div class="motion-val" id="val-acc-x">--</div></div>
+              <div class="motion-box"><div class="motion-axis" style="color:var(--cyan)">Y</div><div class="motion-val" id="val-acc-y">--</div></div>
+              <div class="motion-box"><div class="motion-axis" style="color:var(--green)">Z</div><div class="motion-val" id="val-acc-z">--</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 4: AI Risk + Vitals History List + Alerts -->
+        <div class="bottom-row">
+          <div class="ai-card">
+            <div class="ai-title">🧠 AI Cardiac Risk Assessment</div>
+            <div>
+              <div class="ai-risk-lbl" id="val-ai-risk">--</div>
+              <div class="ai-risk-pct">Probability: <strong id="val-ai-risk-pct">--%</strong></div>
+            </div>
+            <div>
+              <div class="ai-slider-track">
+                <div class="ai-slider-marker" id="val-ai-slider" style="left: 0%;"></div>
+              </div>
+              <div class="ai-slider-labels"><span>Low</span><span>Moderate</span><span>High</span></div>
+            </div>
+            <button class="ai-action-btn" onclick="openAiModal()">
+              🧠 Send to AI for Analysis
+            </button>
+          </div>
+
+          <!-- Tabular Log view replacing running line charts -->
+          <div class="history-card">
+            <div class="history-header">📋 Vitals History Log (Last 10 Min)</div>
+            <div class="history-log-table-wrap">
+              <table class="history-log-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>HR (bpm)</th>
+                    <th>SpO₂ (%)</th>
+                    <th>Temp (°C)</th>
+                    <th>GSR (µS)</th>
+                  </tr>
+                </thead>
+                <tbody id="history-log-table-body">
+                  <tr>
+                    <td colspan="5" style="text-align:center; color:var(--text-dark); padding: 20px;">No connected data registered</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="alerts-card">
+            <div class="alerts-header">
+              <span class="alerts-title">🔔 Recent Alerts</span>
+              <span class="alerts-view-all">View All</span>
+            </div>
+            <div class="alerts-list" id="alerts-log-wrapper">
+              <div class="alert-row" style="border:none;"><p style="font-size:10px; color:var(--text-dark)">No active alert events</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: PATIENTS ==================== -->
+      <div id="tab-patients" style="display:none;">
+        <div class="patients-container">
+          <div class="patients-form-card">
+            <h3 style="font-size:14px; font-weight:800; border-bottom: 1px solid var(--border); padding-bottom:6px;">Add New Patient</h3>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input class="form-input" id="inp-pname" type="text" placeholder="e.g. Ramesh Verma">
+            </div>
+            <div class="form-group">
+              <label>Age</label>
+              <input class="form-input" id="inp-page" type="number" placeholder="e.g. 45">
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <input class="form-input" id="inp-pgender" type="text" placeholder="e.g. Male">
+            </div>
+            <div class="form-group">
+              <label>Device ID</label>
+              <input class="form-input" id="inp-pdevice" type="text" placeholder="e.g. DCX-LO-9821">
+            </div>
+            <div class="form-group">
+              <label>Connection IP Address</label>
+              <input class="form-input" id="inp-pip" type="text" placeholder="e.g. 10.240.99.187">
+            </div>
+            <button class="btn-action" onclick="registerNewPatient()">Add Patient to Directory</button>
+          </div>
+
+          <div class="patients-table-card">
+            <h3 style="font-size:14px; font-weight:800;">Patient Records Directory</h3>
+            <div style="flex:1; overflow-y:auto;">
+              <table class="p-table">
+                <thead>
+                  <tr>
+                    <th>Patient ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Device ID</th>
+                    <th>Connection IP</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="patients-list-table-body">
+                  <!-- dynamic patient rows loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: OTHER STUBS ==================== -->
+      <div id="tab-live-monitor" style="display:none; padding:16px;">
+        <h2 style="margin-bottom:10px;">Full-Scale ECG Waveform</h2>
+        <div class="card-box" style="height:350px;">
+          <div class="ecg-canvas-wrap">
+            <canvas id="largeEcgCanvas" style="width:100%; height:100%; background:#000;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-history" style="display:none; padding:16px;">
+        <h2>Detailed Telemetry Log Archive</h2>
+        <p style="color:var(--text-muted)">Archive database is empty. Waiting for live telemetry logs.</p>
+      </div>
+
+      <div id="tab-analytics" style="display:none; padding:16px;">
+        <h2>Analytical Health Metrics</h2>
+        <p style="color:var(--text-muted)">Requires connected telemetry data stream to compute statistics.</p>
+      </div>
+
+      <div id="tab-alerts" style="display:none; padding:16px;">
+        <h2>System Alerts Logs</h2>
+        <p style="color:var(--text-muted)">Monitoring limits... No thresholds breached.</p>
+      </div>
+
+      <div id="tab-reports" style="display:none; padding:16px;">
+        <h2>Diagnostics PDF Reports</h2>
+        <p style="color:var(--text-muted)">Select a patient and run AI analysis to generate clinician screening reports.</p>
+      </div>
+
+      <div id="tab-settings" style="display:none; padding:16px;">
+        <h2>System Workstation Settings</h2>
+        <p style="color:var(--text-muted)">Firmware protocol configurations and connection details.</p>
+      </div>
+
+    </div>
+    <!-- Footer Bar -->
+    <div id="footer-bar">
+      <div class="footer-section">
+        <div class="footer-item">Device ID: <strong style="color:#fff" id="footer-device-id">DCX-LO-9821</strong></div>
+        <div class="footer-item">Battery: <strong class="footer-green">86%</strong></div>
+      </div>
+      <div class="footer-section">
+        <div class="footer-item">Connection: <strong style="color:#fff">LoRa 433MHz</strong></div>
+        <div class="footer-item">Data Logging: <strong class="footer-green">ON</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE: COMPANION ==================== -->
+<div id="page-companion" class="page-view" style="display: none; padding: 24px; overflow-y: auto;">
+  <div class="companion-container">
+    <!-- Left side: Manual Vitals Form & Ingestion Config -->
+    <div class="companion-left">
+      <div class="comp-card">
+        <h3>🧬 Manual Patient Vitals</h3>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Input manual numbers when the telemetry hardware is disconnected.</p>
+        
+        <div class="comp-form-group">
+          <label>Heart Rate (bpm)</label>
+          <input type="number" id="comp-bpm" value="72" min="30" max="220">
+        </div>
+        <div class="comp-form-group">
+          <label>SpO₂ Blood Oxygen (%)</label>
+          <input type="number" id="comp-spo2" value="98" min="50" max="100">
+        </div>
+        <div class="comp-form-group">
+          <label>Body Temperature (°C)</label>
+          <input type="number" id="comp-temp" value="36.8" step="0.1" min="34" max="43">
+        </div>
+        <div class="comp-form-group">
+          <label>GSR Resistance (kΩ)</label>
+          <input type="number" id="comp-gsr" value="250" min="10" max="1000">
+        </div>
+        
+        <button class="comp-btn-sec" onclick="syncVitalsFromHardware()">
+          🔄 Sync Live Hardware Vitals
+        </button>
+      </div>
+      
+      <div class="comp-card">
+        <h3>🛠️ Ingestion Mode Config</h3>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Choose whether to poll your ESP32 locally or stream via AWS push telemetry.</p>
+        
+        <div class="comp-form-group">
+          <label>Data Inflow Mode</label>
+          <select id="comp-inflow-mode" onchange="changeInflowMode(this.value)" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid rgba(255,255,255,0.08); outline: none;">
+            <option value="local">Local Mode (Direct ESP32 Polling)</option>
+            <option value="cloud">Cloud/AWS Mode (Pushed Telemetry)</option>
+          </select>
+        </div>
+        
+        <div class="comp-form-group" id="comp-device-id-group">
+          <label>Device ID / Patient Mapping</label>
+          <input type="text" id="comp-device-id" value="Patient_Default" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid rgba(255,255,255,0.08);">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right side: Conversational Voice Assistant -->
+    <div class="companion-right">
+      <div class="comp-card chat-card">
+        <div class="chat-header">
+          <h3>💬 AI Health Companion</h3>
+          <span class="chat-status-indicator" id="chat-status">Ready</span>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages-container">
+          <div class="chat-bubble assistant">
+            Hello! I am your AI Health Companion. I can analyze your vital signs, explain your ECG risk patterns, and answer clinical questions. Feel free to type your question below or click the microphone to talk to me!
+          </div>
+        </div>
+        
+        <div class="chat-input-area">
+          <div class="chat-recording-banner" id="chat-recording-indicator" style="display: none;">
+            <span class="pulse-mic">🎙️</span> Recording voice query... Click mic again to stop and send.
+          </div>
+          
+          <div class="chat-input-row">
+            <button class="chat-mic-btn" id="chat-mic-button" onclick="toggleVoiceRecording()" title="Record voice question">
+              🎙️
+            </button>
+            <input type="text" id="chat-text-input" placeholder="Ask about your health stats..." onkeydown="if(event.key==='Enter')sendTextMessage()">
+            <button class="chat-send-btn" onclick="sendTextMessage()">
+              ➔
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+
+  <!-- ═════════════════════════════════════════════════════════
+       AI EXPERT MODAL (SHAP)
+       ═════════════════════════════════════════════════════════ -->
+  <div id="ai-modal">
+    <div class="ai-modal-box">
+      <div class="modal-header">
+        <div class="modal-title">❤️ AI Cardiovascular Diagnostics Engine</div>
+        <button class="modal-close" onclick="closeAiModal()">✕</button>
+      </div>
+
+      <!-- Ensembling loader -->
+      <div id="ai-loader-box" style="display:none; margin-bottom: 20px;">
+        <div class="progress-wrap">
+          <div class="progress-meta">
+            <span id="ai-loader-text">Loading ensemble models...</span>
+            <strong id="ai-loader-pct">0%</strong>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="ai-loader-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Results View -->
+      <div id="ai-results-panel" style="display:none;" class="modal-content-grid">
+        <div>
+          <h3 class="modal-sec-title">Local SHAP Feature Attribution</h3>
+          <div class="shap-attributions" id="shap-bars-list">
+            <!-- SHAP attributes render here -->
+          </div>
+
+          <h3 class="modal-sec-title">Clinical Screening Report</h3>
+          <div class="clinical-message-box">
+            <p id="ai-clinical-msg">—</p>
+          </div>
+        </div>
+
+        <div class="modal-visual-panel">
+          <div class="brain-visual heart-visual">
+            <img src="/static/images/neon_heart.png" alt="AI Cardiovascular heart structure">
+          </div>
+          <div>
+            <h3 class="modal-sec-title">Ensembled Risk Distribution</h3>
+            <div class="dis-prob-bars" id="disease-breakdown-list">
+              <!-- Disease breakdown bars render here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════
+       CLINICIAN SECURITY PIN GATE MODAL (CORRECTLY CENTERED)
+       ═════════════════════════════════════════════════════════ -->
+  <div id="doctor-modal">
+    <div class="dm-card">
+      <h3>🔐 Doctor Authorization Session</h3>
+      <p>Enter validation credentials to unlock clinician workspace</p>
+      <div class="dm-field">
+        <label>Full Name</label>
+        <input class="dm-input" id="doctor-name" type="text" placeholder="Dr. Arjun Mehta" value="Dr. Arjun Mehta">
+      </div>
+      <div class="dm-field">
+        <label>Specialization Dept</label>
+        <input class="dm-input" id="doctor-spec" type="text" placeholder="Cardiologist" value="Cardiologist">
+      </div>
+      <div class="dm-field">
+        <label>Access Verification PIN</label>
+        <input class="dm-input" id="doctor-pin" type="password" placeholder="••••" maxlength="6" onkeydown="if(event.key==='Enter')submitDoctorAuth()">
+      </div>
+      <div class="dm-error" id="doctor-auth-error">Authorization failed. PIN Incorrect.</div>
+      <div class="dm-actions">
+        <button class="dm-btn dm-btn-primary" onclick="submitDoctorAuth()">Authorize Session</button>
+        <button class="dm-btn dm-btn-ghost" onclick="closeDoctorAuthModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════
+       JAVASCRIPT LOGIC WORKSTATION
+       ═════════════════════════════════════════════════════════ -->
+  <script>
+    let ESP32_IP = "10.140.171.187";
+    let pollIntervalId = null;
+    let ticks = 0;
+    let isConnected = false;
+
+    // Three.js Drone tilt states
+    let targetTiltX = 0;
+    let targetTiltY = 0;
+
+    // Helper to update DOM node content safely
+    function setNode(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    // Active views
+    const tabsList = ['dashboard', 'patients', 'live-monitor', 'history', 'analytics', 'alerts', 'reports', 'settings', 'ai-companion'];
+
+    // Vitals Sparklines buffers
+    const sparklineSize = 15;
+    let sparklineBuffers = {
+      bpm: Array(sparklineSize).fill(null),
+      spo2: Array(sparklineSize).fill(null),
+      temp: Array(sparklineSize).fill(null),
+      gsr: Array(sparklineSize).fill(null),
+      motion: Array(sparklineSize).fill(null)
+    };
+
+    // Patient DB directory
+    let patientDatabase = [
+      { id: "DCX20250521", name: "Ramesh Verma", age: 45, gender: "Male", device: "DCX-LO-9821", ip: "10.140.171.187" },
+      { id: "DCX20250522", name: "Sunita Sharma", age: 38, gender: "Female", device: "DCX-LO-9822", ip: "10.240.99.188" }
+    ];
+
+    // Alerts logging
+    let alertsLog = [];
+
+    // Initialize clock and start fetching
+    window.addEventListener('load', () => {
+      startClocks();
+      initThreeJsDrone();
+      renderPatientsTable();
+      
+      // Auto-post connection IP on page load to configure Flask polling thread
+      updateEsp32IpAddress();
+      
+      startTelemetryPolling();
+      
+      // Update Doctor Profile Picture
+      const avatarEl = document.getElementById('topbar-dr-avatar');
+      avatarEl.style.backgroundImage = "url('/static/images/dr_avatar.png')";
+      avatarEl.innerHTML = "";
+    });
+
+    /* ════════════════════════════════════════════════════════
+       TAB VIEW ROUTER SWITCHER
+       ════════════════════════════════════════════════════════ */
+    function switchTab(tabId) {
+      tabsList.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        const linkEl = document.getElementById('menu-link-' + t);
+        if (el) el.style.display = (t === tabId) ? 'block' : 'none';
+        if (linkEl) {
+          if (t === tabId) linkEl.classList.add('active');
+          else linkEl.classList.remove('active');
+        }
+      });
+    }
+
+    /* ════════════════════════════════════════════════════════
+       PATIENT REGISTRY MANAGEMENT
+       ════════════════════════════════════════════════════════ */
+    function renderPatientsTable() {
+      const tbody = document.getElementById('patients-list-table-body');
+      tbody.innerHTML = "";
+      patientDatabase.forEach(p => {
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${p.id}</strong></td>
+            <td>${p.name}</td>
+            <td>${p.age}</td>
+            <td>${p.gender}</td>
+            <td>${p.device}</td>
+            <td><code>${p.ip}</code></td>
+            <td><button class="btn-select-p" onclick="selectActivePatient('${p.id}')">Select Patient</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    function registerNewPatient() {
+      const name = document.getElementById('inp-pname').value.trim();
+      const age = parseInt(document.getElementById('inp-page').value);
+      const gender = document.getElementById('inp-pgender').value.trim();
+      const device = document.getElementById('inp-pdevice').value.trim();
+      const ip = document.getElementById('inp-pip').value.trim();
+
+      if (!name || !age || !gender || !device || !ip) {
+        alert("Please complete all patient input fields.");
+        return;
+      }
+
+      const id = "DCX" + (20250520 + patientDatabase.length + 1);
+      patientDatabase.push({ id, name, age, gender, device, ip });
+      
+      renderPatientsTable();
+      
+      // Clear inputs
+      document.getElementById('inp-pname').value = "";
+      document.getElementById('inp-page').value = "";
+      document.getElementById('inp-pgender').value = "";
+      document.getElementById('inp-pdevice').value = "";
+      document.getElementById('inp-pip').value = "";
+
+      alert(`Registered new patient ${name} successfully.`);
+    }
+
+    function selectActivePatient(id) {
+      const p = patientDatabase.find(x => x.id === id);
+      if (!p) return;
+
+      document.getElementById('p-id').textContent = p.id;
+      document.getElementById('p-name').textContent = p.name;
+      document.getElementById('p-age').textContent = `${p.age} Y / ${p.gender}`;
+      document.getElementById('p-device').textContent = p.device;
+      document.getElementById('footer-device-id').textContent = p.device;
+      
+      // Update topbar IP text field
+      document.getElementById('esp32-ip-address').value = p.ip;
+      
+      // Trigger IP polling change
+      updateEsp32IpAddress();
+      switchTab('dashboard');
+      alert(`Active workstation updated to target patient ${p.name}. Connecting IP...`);
+    }
+
+    /* ════════════════════════════════════════════════════════
+       IP CONFIG CONTROLLERS
+       ════════════════════════════════════════════════════════ */
+    async function updateEsp32IpAddress() {
+      const val = document.getElementById('esp32-ip-address').value.trim();
+      if (!val) return;
+      ESP32_IP = val;
+      
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip: ESP32_IP })
+        });
+      } catch (err) {
+        console.error("Failed to post configuration IP address.", err);
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       CLOCKS & TIME
+       ════════════════════════════════════════════════════════ */
+    function startClocks() {
+      function runTime() {
+        const d = new Date();
+        document.getElementById('topbar-time').textContent = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('topbar-date').textContent = d.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      }
+      runTime();
+      setInterval(runTime, 1000);
+    }
+
+    function setTopbarStatus(label, sub, statusClass) {
+      document.getElementById('topbar-status-label').textContent = label;
+      document.getElementById('topbar-status-sub').textContent = sub;
+      document.getElementById('topbar-status-dot').className = `status-dot active-${statusClass}`;
+    }
+
+    /* ════════════════════════════════════════════════════════
+       CLINICIAN SECURITY PIN GATE MODALS
+       ════════════════════════════════════════════════════════ */
+    function openDoctorAuthModal() {
+      document.getElementById('doctor-modal').classList.add('open');
+      document.getElementById('doctor-auth-error').classList.remove('visible');
+    }
+
+    function closeDoctorAuthModal() {
+      document.getElementById('doctor-modal').classList.remove('open');
+    }
+
+    function submitDoctorAuth() {
+      const name = document.getElementById('doctor-name').value.trim();
+      const spec = document.getElementById('doctor-spec').value.trim();
+      const pin = document.getElementById('doctor-pin').value;
+
+      if (pin !== "1234") {
+        document.getElementById('doctor-auth-error').classList.add('visible');
+        return;
+      }
+
+      document.getElementById('topbar-dr-name').textContent = name || "Dr. Arjun Mehta";
+      document.getElementById('topbar-dr-spec').textContent = spec || "Cardiologist";
+      
+      closeDoctorAuthModal();
+      alert("Credentials validation success. Clinician workspace unlocked.");
+    }
+
+    // Modal backdrop check
+    document.getElementById('doctor-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeDoctorAuthModal();
+    });
+
+    /* ════════════════════════════════════════════════════════
+       TELEMETRY POLLING DISPATCHERS
+       ════════════════════════════════════════════════════════ */
+    function startTelemetryPolling() {
+      // A persistent event stream replaces overlapping 500 ms HTTP polls.
+      // This avoids stale snapshots and lets the ECG advance as soon as the
+      // backend has a clean packet available.
+      let fallbackTimer = null;
+      const useRestFallback = () => {
+        if (fallbackTimer) return;
+        // Compatibility path for an already-running/older Flask process that
+        // only exposes /api/status. This keeps the dashboard usable while the
+        // persistent stream reconnects after a backend restart.
+        stream.close();
+        fetchData();
+        fallbackTimer = setInterval(fetchData, 1000);
+      };
+      const stream = new EventSource('/api/stream');
+      stream.addEventListener('telemetry', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (fallbackTimer) {
+            clearInterval(fallbackTimer);
+            fallbackTimer = null;
+          }
+          isConnected = payload.sensors.online;
+          if (isConnected) {
+            processSensorData(payload);
+            setTopbarStatus('LIVE MONITORING', 'Real-time sensor stream active', 'live');
+          } else {
+            setHardwareOfflineState();
+          }
+          ticks++;
+        } catch (_) {
+          setHardwareOfflineState();
+        }
+      });
+      stream.onerror = () => {
+        isConnected = false;
+        setTopbarStatus('RECONNECTING', 'Waiting for telemetry stream', 'offline');
+        useRestFallback();
+      };
+    }
+
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/status', { cache: 'no-store' });
+        if (!res.ok) throw new Error();
+        const payload = await res.json();
+        
+        isConnected = payload.sensors.online;
+        
+        if (isConnected) {
+          processSensorData(payload);
+          setTopbarStatus("LIVE MONITORING", "All Systems Operational", "live");
+        } else {
+          setHardwareOfflineState();
+        }
+      } catch (err) {
+        setHardwareOfflineState();
+      }
+      ticks++;
+    }
+
+    function setHardwareOfflineState() {
+      isConnected = false;
+      setTopbarStatus("DEVICE OFFLINE", "No hardware connection detected", "offline");
+
+      // Set empty placeholders for vital widgets
+      setNode('val-bpm', '--');
+      setNode('val-bpm-status', 'OFFLINE');
+      setNode('val-spo2', '--');
+      setNode('val-spo2-status', 'OFFLINE');
+      setNode('val-temp', '--');
+      setNode('val-temp-status', 'OFFLINE');
+      setNode('val-gsr', '--');
+      setNode('val-gsr-status', 'OFFLINE');
+      setNode('val-activity', '--');
+      setNode('val-activity-status', 'OFFLINE');
+
+      // Accelerometer stubs
+      setNode('val-acc-x', '--');
+      setNode('val-acc-y', '--');
+      setNode('val-acc-z', '--');
+      targetTiltX = 0;
+      targetTiltY = 0;
+
+      // Static trend elements
+      setNode('val-trend-spo2', '--%');
+      setNode('val-trend-gsr', '-- µS');
+      setNode('val-trend-temp', '-- °C');
+      document.getElementById('fill-trend-spo2').style.width = '0%';
+      document.getElementById('fill-trend-gsr').style.width = '0%';
+      document.getElementById('fill-trend-temp').style.width = '0%';
+
+      // LoRa panel offline stubs
+      setNode('val-lora-tx', '--');
+      setNode('val-lora-signal', '--');
+      document.getElementById('val-lora-badge').textContent = '○ Standby';
+      document.getElementById('val-lora-badge').className = 'card-badge';
+
+      // Clear ECG trace
+      drawECGWaveform('ecgCanvas', [], true);
+
+      // Clear sparkline canvases
+      clearCanvas('spark-bpm');
+      clearCanvas('spark-spo2');
+      clearCanvas('spark-temp');
+      clearCanvas('spark-gsr');
+      clearCanvas('spark-motion');
+
+      // Sync stubs
+      setNode('p-sync', '--');
+    }
+
+    function clearCanvas(id) {
+      const canvas = document.getElementById(id);
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+      }
+    }
+
+    function processSensorData(payload) {
+      const s = payload.sensors;
+      const ecg = payload.ecg;
+
+      // Extract values
+      const bpm = s.bpm;
+      const spo2 = s.spo2;
+      const temp = parseFloat(s.objTemp.toFixed(1));
+      const cond = parseFloat(s.cond.toFixed(2));
+      const loraTx = s.loraTxCount;
+
+      // Update Top card elements
+      setNode('val-bpm', bpm || '--');
+      setNode('val-bpm-status', bpm > 100 ? 'TACHYCARDIA' : bpm < 60 && bpm > 0 ? 'BRADYCARDIA' : 'NORMAL');
+      setNode('val-spo2', spo2 || '--');
+      setNode('val-spo2-status', spo2 < 95 ? 'HYPOXIA' : spo2 < 97 ? 'LOW' : 'NORMAL');
+      setNode('val-temp', temp || '--');
+      setNode('val-temp-status', temp > 37.8 ? 'FEVER' : 'NORMAL');
+      setNode('val-gsr', s.gsrOK ? cond : '--');
+      setNode('val-gsr-status', s.gsrOK ? (cond > 5 ? 'STRESSED' : 'CALM') : 'OFFLINE');
+
+      // Motion / Activity
+      const az = parseFloat(s.az.toFixed(2));
+      const ax = parseFloat(s.ax.toFixed(2));
+      const ay = parseFloat(s.ay.toFixed(2));
+      const motion = Math.sqrt(ax * ax + ay * ay + (az - 1) * (az - 1));
+      // MPU6050 readings retain small gravity/tilt offsets even while still.
+      // Treat that stable range as relaxed/standing rather than walking.
+      const actLabel = motion < 0.03 ? 'Relaxed' : motion < 0.12 ? 'Standing / Relaxed' : motion < 0.30 ? 'Walking' : 'Active';
+      const actStatus = motion < 0.12 ? 'CALM' : motion < 0.30 ? 'MODERATE' : 'ACTIVE';
+      setNode('val-activity', actLabel);
+      setNode('val-activity-status', actStatus);
+
+      // Accelerometer metrics
+      setNode('val-acc-x', ax.toFixed(2));
+      setNode('val-acc-y', ay.toFixed(2));
+      setNode('val-acc-z', az.toFixed(2));
+      
+      targetTiltX = ax;
+      targetTiltY = ay;
+
+      // Static trend elements updates
+      setNode('val-trend-spo2', spo2 + "%");
+      setNode('val-trend-gsr', cond + " µS");
+      setNode('val-trend-temp', temp + "°C");
+      document.getElementById('fill-trend-spo2').style.width = Math.min(100, Math.max(0, spo2)) + '%';
+      document.getElementById('fill-trend-gsr').style.width = Math.min(100, Math.max(0, cond * 10)) + '%';
+      document.getElementById('fill-trend-temp').style.width = Math.min(100, Math.max(0, (temp - 30) * 10)) + '%';
+
+      // LoRa Transmission details
+      setNode('val-lora-tx', loraTx);
+      setNode('val-lora-signal', `${s.loraRxRssi} dBm / ${s.loraRxSnr.toFixed(1)} SNR`);
+      const isLoraOk = s.loraReady;
+      document.getElementById('val-lora-badge').textContent = isLoraOk ? '● Active' : '○ Standby';
+      document.getElementById('val-lora-badge').className = 'card-badge ' + (isLoraOk ? 'badge-lora-active' : '');
+
+      if (s.loraRxPacket && s.loraRxPacket !== "No hardware connected" && s.loraRxPacket !== "No packet received" && window.lastLoraPacket !== s.loraRxPacket) {
+        window.lastLoraPacket = s.loraRxPacket;
+        const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        // Continuous floating list insertion
+        const container = document.getElementById('lora-packet-stream');
+        const div = document.createElement('div');
+        div.className = "lora-line";
+        div.innerHTML = `<span style="color:var(--cyan)">[${timeStr}]</span> ${s.loraRxPacket}`;
+        
+        container.appendChild(div);
+        if (container.children.length > 20) {
+          container.removeChild(container.firstChild);
+        }
+        container.scrollTop = container.scrollHeight;
+      }
+
+      // ECG wave elements
+      const leadsOff = ecg.leadsOff;
+      const ecgBadge = document.getElementById('ecg-leads-badge');
+      ecgBadge.textContent = '● LIVE SIGNAL';
+      ecgBadge.style.background = 'rgba(62, 230, 176, 0.1)';
+      ecgBadge.style.color = '#3ee6b0';
+      ecgBadge.style.borderColor = 'rgba(62, 230, 176, 0.25)';
+      
+      document.getElementById('val-ecg-quality').textContent = 'Excellent';
+      document.getElementById('val-ecg-quality').style.color = 'var(--green)';
+
+      // Draw ECG plot
+      drawECGWaveform('ecgCanvas', ecg.samples, false);
+      if (document.getElementById('tab-live-monitor').style.display !== 'none') {
+        drawECGWaveform('largeEcgCanvas', ecg.samples, false);
+      }
+
+      // HRV & RR stats
+      if (bpm > 0) {
+        const rr = Math.round(60000 / bpm);
+        const hrv = Math.round(rr * 0.05 + Math.random() * 8);
+        setNode('val-ecg-hrv', hrv);
+        setNode('val-ecg-rr', rr);
+      }
+
+      // Sidebar Sync Metadata
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setNode('p-sync', timeStr);
+
+      // Sparklines buffers push
+      pushSparkVal('bpm', bpm || 72);
+      pushSparkVal('spo2', spo2 || 98);
+      pushSparkVal('temp', temp || 36.5);
+      pushSparkVal('gsr', cond || 3.5);
+      pushSparkVal('motion', motion);
+      renderAllSparklines();
+
+      // Alerts check
+      runVitalsAlertCheck(bpm, spo2, temp, cond);
+
+      // Roll static history logs table
+      if (ticks % 10 === 0) {
+        pushHistoryTableLog(timeStr, bpm, spo2, temp, cond);
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       SPARKLINE GRAPHS
+       ════════════════════════════════════════════════════════ */
+    function pushSparkVal(key, val) {
+      sparklineBuffers[key].push(val);
+      if (sparklineBuffers[key].length > sparklineSize) {
+        sparklineBuffers[key].shift();
+      }
+    }
+
+    function renderAllSparklines() {
+      drawSparkline('spark-bpm', sparklineBuffers.bpm, 'var(--red)');
+      drawSparkline('spark-spo2', sparklineBuffers.spo2, 'var(--cyan)');
+      drawSparkline('spark-temp', sparklineBuffers.temp, 'var(--amber)');
+      drawSparkline('spark-gsr', sparklineBuffers.gsr, 'var(--purple)');
+      drawSparkline('spark-motion', sparklineBuffers.motion, 'var(--green)');
+    }
+
+    function drawSparkline(canvasId, buffer, color) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.clientWidth || 140;
+      const H = canvas.clientHeight || 20;
+      canvas.width = W;
+      canvas.height = H;
+
+      ctx.clearRect(0, 0, W, H);
+      const filtered = buffer.filter(v => v !== null);
+      if (filtered.length === 0) return;
+
+      const min = Math.min(...filtered);
+      const max = Math.max(...filtered);
+      const range = (max - min) || 1;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      buffer.forEach((v, i) => {
+        if (v === null) return;
+        const x = (i / (buffer.length - 1)) * W;
+        const y = H - 2 - ((v - min) / range) * (H - 4);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    /* ════════════════════════════════════════════════════════
+       ECG CANVAS PAINTER
+       ════════════════════════════════════════════════════════ */
+    let simEcgTick = 0;
+    function generateSimulatedEcg(samplesCount, bpm) {
+      const samples = [];
+      const sampleRate = 250;
+      const period = Math.round((60 / bpm) * sampleRate);
+      for (let i = 0; i < samplesCount; i++) {
+        const x = (simEcgTick + i) % period;
+        let val = 2048;
+        
+        // Synthesize PQRST waveform segments
+        if (x > period * 0.12 && x < period * 0.20) {
+          const t = (x - period * 0.12) / (period * 0.08);
+          val += 65 * Math.sin(t * Math.PI);
+        } else if (x >= period * 0.22 && x < period * 0.24) {
+          const t = (x - period * 0.22) / (period * 0.02);
+          val -= 100 * t;
+        } else if (x >= period * 0.24 && x < period * 0.27) {
+          const t = (x - period * 0.24) / (period * 0.03);
+          if (t < 0.5) val += 1100 * (t * 2);
+          else val += 1100 * (2 - t * 2);
+        } else if (x >= period * 0.27 && x < period * 0.29) {
+          const t = (x - period * 0.27) / (period * 0.02);
+          val -= 200 * (1 - t);
+        } else if (x > period * 0.35 && x < period * 0.48) {
+          const t = (x - period * 0.35) / (period * 0.13);
+          val += 220 * Math.sin(t * Math.PI);
+        }
+        
+        // Add random high-frequency muscle noise
+        val += (Math.random() - 0.5) * 45;
+        // Add low-frequency baseline drift (respiratory wander)
+        val += 50 * Math.sin((simEcgTick + i) / 380.0);
+        
+        samples.push(Math.round(val));
+      }
+      // Step tick forwards to simulate scrolling
+      simEcgTick = (simEcgTick + 10) % 100000;
+      return samples;
+    }
+
+    function drawECGWaveform(canvasId, samples, leadsOff) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.clientWidth;
+      const H = canvas.clientHeight;
+      canvas.width = W;
+      canvas.height = H;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Red Grid backing lines
+      ctx.strokeStyle = 'rgba(255, 59, 92, 0.08)';
+      ctx.lineWidth = 0.5;
+      
+      const stepGridX = W / 10;
+      const stepGridY = H / 5;
+      for (let i = 0; i <= 10; i++) {
+        ctx.beginPath(); ctx.moveTo(i * stepGridX, 0); ctx.lineTo(i * stepGridX, H); ctx.stroke();
+      }
+      for (let j = 0; j <= 5; j++) {
+        ctx.beginPath(); ctx.moveTo(0, j * stepGridY); ctx.lineTo(W, j * stepGridY); ctx.stroke();
+      }
+
+      let drawSamples = samples;
+      let isSimulated = false;
+      let reasonText = '';
+      let isOffline = !isConnected;
+
+      if (isOffline || leadsOff || !samples || samples.length === 0 || samples[0] === -1) {
+        drawSamples = generateSimulatedEcg(500, 75);
+        isSimulated = true;
+        reasonText = isOffline ? '⚠ DEVICE OFFLINE — STANDBY ECG SIMULATION ACTIVE' : '⚠ LEADS OFF — CHECK ELECTRODES (SIMULATED WAVE ACTIVE)';
+      }
+
+      // AD8232 values are 12-bit ADC samples. Keeping this scale fixed prevents
+      // the entire trace from jumping whenever an R peak enters/leaves the buffer.
+      const min = 0;
+      const max = 4095;
+      const range = max - min;
+      const padding = 12;
+
+      ctx.shadowColor = 'rgba(255, 59, 92, 0.85)';
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = '#ff3b5c';
+      ctx.lineWidth = 2.0;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      const stepX = W / (drawSamples.length - 1);
+      drawSamples.forEach((v, i) => {
+        const x = i * stepX;
+        const y = H - padding - ((v - min) / range) * (H - padding * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Trace gradient shadow fill
+      ctx.shadowBlur = 0;
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(255, 59, 92, 0.12)');
+      grad.addColorStop(1, 'rgba(255, 59, 92, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      drawSamples.forEach((v, i) => {
+        const x = i * stepX;
+        const y = H - padding - ((v - min) / range) * (H - padding * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fill();
+
+    }
+
+    /* ════════════════════════════════════════════════════════
+       3D DRONE ACCELEROMETER MODEL (THREE.JS)
+       ════════════════════════════════════════════════════════ */
+    let droneGroup;
+    function initThreeJsDrone() {
+      const container = document.getElementById('drone-canvas-container');
+      if (!container) return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+      
+      const pointLight = new THREE.PointLight(0x00d4ff, 1.5, 30);
+      pointLight.position.set(3, 3, 3);
+      scene.add(pointLight);
+
+      droneGroup = new THREE.Group();
+
+      const bodyGeo = new THREE.SphereGeometry(0.7, 12, 12);
+      const bodyMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true });
+      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      droneGroup.add(bodyMesh);
+
+      const armGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.8, 8);
+      const armMat = new THREE.MeshPhongMaterial({ color: 0x4a5878 });
+      
+      const arm1 = new THREE.Mesh(armGeo, armMat);
+      arm1.rotation.z = Math.PI / 4;
+      arm1.rotation.y = Math.PI / 2;
+      droneGroup.add(arm1);
+
+      const arm2 = new THREE.Mesh(armGeo, armMat);
+      arm2.rotation.z = -Math.PI / 4;
+      arm2.rotation.y = Math.PI / 2;
+      droneGroup.add(arm2);
+
+      const rotorGeo = new THREE.TorusGeometry(0.4, 0.03, 6, 16);
+      const rotorMat = new THREE.MeshBasicMaterial({ color: 0xff3b5c, transparent: true, opacity: 0.8 });
+
+      const positions = [
+        { x: 1.0, z: 1.0 },
+        { x: -1.0, z: 1.0 },
+        { x: 1.0, z: -1.0 },
+        { x: -1.0, z: -1.0 }
+      ];
+
+      positions.forEach(pos => {
+        const r = new THREE.Mesh(rotorGeo, rotorMat);
+        r.position.set(pos.x, 0.08, pos.z);
+        r.rotation.x = Math.PI / 2;
+        droneGroup.add(r);
+      });
+
+      scene.add(droneGroup);
+      camera.position.z = 5;
+
+      function renderDrone() {
+        requestAnimationFrame(renderDrone);
+
+        droneGroup.children.forEach(c => {
+          if (c.geometry.type === "TorusGeometry") {
+            c.rotation.z += 0.25;
+          }
+        });
+
+        if (isConnected) {
+          const targetX = targetTiltY * 0.8;
+          const targetZ = -targetTiltX * 0.8;
+          droneGroup.rotation.x += (targetX - droneGroup.rotation.x) * 0.1;
+          droneGroup.rotation.z += (targetZ - droneGroup.rotation.z) * 0.1;
+        } else {
+          droneGroup.rotation.x += (0 - droneGroup.rotation.x) * 0.05;
+          droneGroup.rotation.z += (0 - droneGroup.rotation.z) * 0.05;
+        }
+        droneGroup.rotation.y += 0.005;
+
+        renderer.render(scene, camera);
+      }
+      renderDrone();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+    }
+
+    /* ════════════════════════════════════════════════════════
+       ALERTS & STATIC TABLES
+       ════════════════════════════════════════════════════════ */
+    function runVitalsAlertCheck(bpm, spo2, temp, cond) {
+      const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      if (bpm > 100) {
+        logAlertRow("❤️", "Heart Rate High", timeStr, `${bpm} bpm`, "var(--red)");
+      } else if (bpm < 60 && bpm > 0) {
+        logAlertRow("❤️", "Heart Rate Low", timeStr, `${bpm} bpm`, "var(--red)");
+      }
+
+      if (spo2 < 95) {
+        logAlertRow("💧", "SpO₂ Low", timeStr, `${spo2}%`, "var(--red)");
+      } else if (spo2 < 97) {
+        logAlertRow("💧", "SpO₂ Low-Perfusion", timeStr, `${spo2}%`, "var(--amber)");
+      }
+
+      if (temp > 37.8) {
+        logAlertRow("🌡️", "Temperature High", timeStr, `${temp}°C`, "var(--red)");
+      }
+      
+      if (cond > 5) {
+        logAlertRow("🟣", "Stress Level High", timeStr, `${cond} µS`, "var(--purple)");
+      }
+    }
+
+    function logAlertRow(icon, name, time, val, color) {
+      const recent = alertsLog.slice(0, 3);
+      if (recent.some(a => a.name === name && a.val === val)) return;
+
+      alertsLog.unshift({ icon, name, time, val, color });
+      if (alertsLog.length > 5) alertsLog.pop();
+
+      renderAlertsList();
+    }
+
+    function renderAlertsList() {
+      const wrapper = document.getElementById('alerts-log-wrapper');
+      if (!wrapper) return;
+      wrapper.innerHTML = "";
+      
+      alertsLog.forEach(a => {
+        wrapper.innerHTML += `
+          <div class="alert-row">
+            <div class="alert-icon">${a.icon}</div>
+            <div class="alert-details">
+              <div class="alert-name">${a.name}</div>
+              <div class="alert-time">${a.time}</div>
+            </div>
+            <div class="alert-val" style="color:${a.color}">${a.val}</div>
+          </div>
+        `;
+      });
+    }
+
+    let historyTableBuffer = [];
+    function pushHistoryTableLog(timeStr, bpm, spo2, temp, cond) {
+      historyTableBuffer.unshift({ time: timeStr, bpm, spo2, temp, cond });
+      if (historyTableBuffer.length > 6) {
+        historyTableBuffer.pop();
+      }
+
+      const tbody = document.getElementById('history-log-table-body');
+      tbody.innerHTML = "";
+      historyTableBuffer.forEach(h => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${h.time}</td>
+            <td style="color:var(--red); font-weight:700;">${h.bpm}</td>
+            <td style="color:var(--cyan); font-weight:700;">${h.spo2}%</td>
+            <td style="color:var(--amber); font-weight:700;">${h.temp}°C</td>
+            <td style="color:var(--purple); font-weight:700;">${h.cond} µS</td>
+          </tr>
+        `;
+      });
+    }
+
+    /* ════════════════════════════════════════════════════════
+       AI ENSEMBLED DIAGNOSTIC CONTROLLERS
+       ════════════════════════════════════════════════════════ */
+    function openAiModal() {
+      if (!isConnected) {
+        alert("Diagnostics fail. Cannot run ensembling models while device is offline.");
+        return;
+      }
+
+      document.getElementById('ai-modal').classList.add('open');
+      
+      document.getElementById('ai-loader-box').style.display = 'block';
+      document.getElementById('ai-results-panel').style.display = 'none';
+      
+      const loaderSteps = [
+        { progress: 0, text: "Contacting ensembling risk nodes..." },
+        { progress: 15, text: "Extracting ECG time domain intervals..." },
+        { progress: 30, text: "Mapping SpO₂ blood perfusion trends..." },
+        { progress: 50, text: "Running Random Forest classifications..." },
+        { progress: 68, text: "Quantizing XGBoost ensembled confidence values..." },
+        { progress: 85, text: "Compiling local SHAP attributions..." },
+        { progress: 100, text: "Report ready" }
+      ];
+
+      let stepIdx = 0;
+      const progressTimer = setInterval(() => {
+        if (stepIdx >= loaderSteps.length) {
+          clearInterval(progressTimer);
+          return;
+        }
+        
+        const step = loaderSteps[stepIdx];
+        document.getElementById('ai-loader-fill').style.width = step.progress + '%';
+        document.getElementById('ai-loader-pct').textContent = step.progress + '%';
+        document.getElementById('ai-loader-text').textContent = step.text;
+        
+        stepIdx++;
+      }, 2100);
+
+      runFlaskAiModel(progressTimer);
+    }
+
+    function closeAiModal() {
+      document.getElementById('ai-modal').classList.remove('open');
+    }
+
+    document.getElementById('ai-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeAiModal();
+    });
+
+    async function runFlaskAiModel(timerId) {
+      try {
+        const res = await fetch('/api/run-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+
+        clearInterval(timerId);
+        document.getElementById('ai-loader-fill').style.width = '100%';
+        document.getElementById('ai-loader-pct').textContent = '100%';
+        document.getElementById('ai-loader-text').textContent = 'Report compiled';
+
+        setTimeout(() => {
+          document.getElementById('ai-loader-box').style.display = 'none';
+          renderDiagnosticReport(data);
+        }, 1000);
+
+      } catch (err) {
+        clearInterval(timerId);
+        document.getElementById('ai-loader-text').textContent = "Model connection fail.";
+        document.getElementById('ai-loader-pct').textContent = "ERR";
+      }
+    }
+
+    function renderDiagnosticReport(data) {
+      document.getElementById('ai-results-panel').style.display = 'grid';
+
+      const shap = data.shap_values;
+      const maxShapAbs = Math.max(...Object.values(shap).map(Math.abs), 0.05);
+      const shapEntries = Object.entries(shap).sort((a,b) => Math.abs(b[1]) - Math.abs(a[1]));
+
+      const shapList = document.getElementById('shap-bars-list');
+      shapList.innerHTML = "";
+      shapEntries.forEach(([feat, val]) => {
+        const isPos = val >= 0;
+        const widthPct = Math.min(100, (Math.abs(val) / maxShapAbs) * 100);
+        
+        const row = document.createElement('div');
+        row.className = "shap-row";
+        row.innerHTML = `
+          <div class="shap-meta">
+            <span class="shap-label">${feat}</span>
+            <span class="${isPos ? 'shap-val-pos' : 'shap-val-neg'}">
+              ${isPos ? '+' : ''}${val.toFixed(3)}
+            </span>
+          </div>
+          <div class="shap-track">
+            <div class="shap-fill ${isPos ? 'fill-pos' : 'fill-neg'}" style="width: ${widthPct}%"></div>
+          </div>
+        `;
+        shapList.appendChild(row);
+      });
+
+      document.getElementById('ai-clinical-msg').textContent = data.clinical_message;
+
+      const pred = data.predictions;
+      const barColors = {
+        "Normal Rhythm": "var(--green)",
+        "Arrhythmia": "var(--red)",
+        "Myocardial Infarction": "#ff6b00",
+        "Conduction Disturbance": "var(--amber)",
+        "Hypertrophy": "var(--purple)"
+      };
+
+      const breakdown = document.getElementById('disease-breakdown-list');
+      breakdown.innerHTML = "";
+      Object.entries(pred).forEach(([disName, prob]) => {
+        const row = document.createElement('div');
+        row.className = "dpb-row";
+        row.innerHTML = `
+          <span class="dpb-name">${disName}</span>
+          <div class="dpb-track">
+            <div class="dpb-fill" style="width: ${prob}%; background: ${barColors[disName] || '#888'}"></div>
+          </div>
+          <span class="dpb-val" style="color: ${barColors[disName] || '#fff'}">${prob}%</span>
+        `;
+        breakdown.appendChild(row);
+      });
+
+      const normPct = pred["Normal Rhythm"] || 88;
+      const anomalyRisk = 100 - normPct;
+      const riskLabel = anomalyRisk < 7 ? 'LOW RISK' : anomalyRisk < 12 ? 'MODERATE RISK' : 'HIGH RISK';
+      const riskClass = anomalyRisk < 7 ? '' : anomalyRisk < 12 ? 'moderate' : 'high';
+
+      const dRisk = document.getElementById('val-ai-risk');
+      dRisk.textContent = riskLabel;
+      dRisk.className = 'ai-risk-lbl ' + riskClass;
+      document.getElementById('val-ai-risk-pct').textContent = anomalyRisk.toFixed(1) + '%';
+      
+      document.getElementById('val-ai-slider').style.left = Math.min(95, Math.max(5, anomalyRisk * 2.2)) + "%";
+    }
+
+    /* ════════════════════════════════════════════════════════
+       AI COMPANION PANEL LOGIC
+       ════════════════════════════════════════════════════════ */
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    function syncVitalsFromHardware() {
+      const bpm = document.getElementById('val-bpm').textContent;
+      const spo2 = document.getElementById('val-spo2').textContent;
+      const temp = document.getElementById('val-temp').textContent;
+      const gsr = document.getElementById('val-gsr').textContent;
+
+      if (bpm && bpm !== "--") document.getElementById('comp-bpm').value = parseInt(bpm);
+      if (spo2 && spo2 !== "--") document.getElementById('comp-spo2').value = parseInt(spo2);
+      if (temp && temp !== "--") document.getElementById('comp-temp').value = parseFloat(temp);
+      if (gsr && gsr !== "--") document.getElementById('comp-gsr').value = parseFloat(gsr);
+      
+      alert("Manual form updated with live hardware metrics!");
+    }
+
+    async function changeInflowMode(mode) {
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode, ip: ESP32_IP })
+        });
+        if (res.ok) {
+          alert(`Inflow mode changed to: ${mode === 'local' ? 'Direct ESP32 Polling' : 'Cloud/AWS pushed telemetry'}`);
+          document.getElementById('comp-device-id-group').style.display = (mode === 'cloud') ? 'block' : 'none';
+        }
+      } catch (err) {
+        console.error("Error updating inflow config mode:", err);
+      }
+    }
+
+    function addChatBubble(text, sender) {
+      const container = document.getElementById('chat-messages-container');
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${sender}`;
+      bubble.textContent = text;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+      return bubble;
+    }
+
+    async function queryChatAssistant(formData) {
+      const statusEl = document.getElementById('chat-status');
+      statusEl.textContent = "Thinking...";
+
+      try {
+        const response = await fetch('/api/chat-assistant', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error("Server error");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+
+        const assistantBubble = addChatBubble("", "assistant");
+        statusEl.textContent = "Typing...";
+
+        let accumulatedText = "";
+        let buffer = "";
+        let userVoiceBubble = null;
+
+        // Check if last user bubble was voice question placeholder
+        const container = document.getElementById('chat-messages-container');
+        const userBubbles = container.querySelectorAll('.chat-bubble.user');
+        if (userBubbles.length > 0) {
+          const lastUserBubble = userBubbles[userBubbles.length - 1];
+          if (lastUserBubble.textContent === "[Voice Question Sent]") {
+            userVoiceBubble = lastUserBubble;
+          }
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              try {
+                const payload = JSON.parse(trimmed.slice(6));
+                if (payload.type === 'transcription') {
+                  if (payload.text && !payload.text.startsWith('Simulated') && userVoiceBubble) {
+                    userVoiceBubble.textContent = `🎙️ "${payload.text}"`;
+                  }
+                } else if (payload.type === 'chunk') {
+                  accumulatedText += payload.content;
+                  assistantBubble.textContent = accumulatedText;
+                  container.scrollTop = container.scrollHeight;
+                } else if (payload.type === 'done') {
+                  statusEl.textContent = "Ready";
+                }
+              } catch (_) {}
+            }
+          }
+        }
+        statusEl.textContent = "Ready";
+      } catch (err) {
+        console.error("Chat assistant communication error:", err);
+        statusEl.textContent = "Error";
+        addChatBubble("Sorry, I encountered an error communicating with the clinical assistant node.", "assistant");
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       GLOBAL MULTI-PAGE ROUTER (HOME / DASHBOARD / COMPANION)
+       ════════════════════════════════════════════════════════ */
+    const pagesList = ['home', 'dashboard', 'companion'];
+
+    function showPage(pageId) {
+      pagesList.forEach(p => {
+        const el = document.getElementById('page-' + p);
+        const navLink = document.getElementById('nav-link-' + p);
+        if (el) {
+          if (p === 'dashboard' && pageId === 'dashboard') {
+            el.style.display = 'flex';
+          } else {
+            el.style.display = (p === pageId) ? 'block' : 'none';
+          }
+        }
+        if (navLink) {
+          if (p === pageId) navLink.classList.add('active');
+          else navLink.classList.remove('active');
+        }
+      });
+      
+      // Force UI redraw / canvas resizing
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    // Initialize to Home Page on load
+    document.addEventListener("DOMContentLoaded", () => {
+      showPage('home');
+    });
+  </script>
+</body>
+</html>

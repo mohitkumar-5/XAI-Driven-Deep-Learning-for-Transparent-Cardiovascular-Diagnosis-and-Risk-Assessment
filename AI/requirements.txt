@@ -1,0 +1,11 @@
+numpy
+pandas
+scipy
+scikit-learn
+xgboost
+shap
+neurokit2
+wfdb
+requests
+matplotlib
+pytest
