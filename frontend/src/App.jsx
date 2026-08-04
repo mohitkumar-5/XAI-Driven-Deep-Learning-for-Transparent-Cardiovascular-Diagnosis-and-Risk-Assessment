@@ -48,7 +48,7 @@ export default function App() {
 
   /* home left-nav */
   const [homeSection, setHomeSection] = useState('overview');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [googleUser, setGoogleUser] = useState(() => {
     try {
       const saved = localStorage.getItem('google_user');
@@ -602,11 +602,10 @@ export default function App() {
         className="min-h-16 py-2 md:py-0 w-full flex flex-wrap md:flex-nowrap justify-between items-center px-3 md:px-6 shrink-0 z-50 shadow-sm transition-colors duration-300 gap-2">
         <div className="flex items-center gap-2 md:gap-3">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1.5 md:p-2 rounded-xl border transition-all flex items-center gap-1 text-xs font-bold hover:bg-sky-500/10"
+            className="p-2 rounded-xl border transition-all flex items-center justify-center text-xs font-bold hover:bg-sky-500/10 shrink-0"
             title="Toggle Sidebar Navigation"
             style={{ background: isSidebarOpen ? 'rgba(2,132,199,0.15)' : 'transparent', borderColor: border, color: '#0284c7' }}>
-            <Menu className="h-4 w-4" />
-            <span className="text-[10px] font-black tracking-tighter">---</span>
+            <Menu className="h-5 w-5" />
           </button>
           <AnimatedHeartBeat size={28} color="#ef4444" />
           <div>
@@ -653,18 +652,18 @@ export default function App() {
           <>
             {/* Home Left Sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className={`flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-all duration-300 w-full md:w-[210px] overflow-x-auto md:overflow-x-visible border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
-              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Explore</p>
+              className={`flex flex-col gap-2 p-3 shrink-0 transition-all duration-300 w-full md:w-[220px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
+              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-1" style={{ color: muted }}>Explore</p>
               {homeSections.map(s => (
                 <button key={s.id}
-                  className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
                   style={homeSection === s.id
                     ? { background: dark ? 'rgba(2,132,199,0.12)' : '#eff6ff', color: '#0284c7', border: `1px solid rgba(2,132,199,0.2)` }
                     : { color: muted, background: 'transparent', border: '1px solid transparent' }}
                   onClick={() => setHomeSection(s.id)}>
                   {s.icon}
                   {s.label}
-                  {homeSection === s.id && <ChevronRight className="h-3 w-3 ml-auto hidden md:block" />}
+                  {homeSection === s.id && <ChevronRight className="h-3 w-3 ml-auto" />}
                 </button>
               ))}
 
@@ -948,10 +947,10 @@ export default function App() {
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Dashboard Left Sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className={`flex md:flex-col gap-2 md:gap-4 p-2.5 md:p-4 shrink-0 transition-all duration-300 overflow-x-auto md:overflow-y-auto w-full md:w-[210px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
-              <div className="flex flex-row md:flex-col gap-1 w-full shrink-0">
-                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Navigation</p>
-                <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible w-full shrink-0">
+              className={`flex flex-col gap-3 p-3 shrink-0 transition-all duration-300 w-full md:w-[220px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
+              <div className="flex flex-col gap-1 w-full shrink-0">
+                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-1" style={{ color: muted }}>Navigation</p>
+                <div className="flex flex-col gap-1 w-full shrink-0">
                   {[
                     { id: 'dashboard', l: 'Dashboard', icon: <Home className="h-4 w-4" /> },
                     { id: 'patients', l: 'Patients', icon: <Users className="h-4 w-4" /> },
@@ -962,7 +961,7 @@ export default function App() {
                     { id: 'settings', l: 'Settings', icon: <Settings className="h-4 w-4" /> },
                   ].map(tab => (
                     <button key={tab.id}
-                      className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
                       style={activeTab === tab.id
                         ? { color: '#0284c7', background: dark ? 'rgba(2,132,199,0.1)' : '#eff6ff', border: '1px solid rgba(2,132,199,0.2)' }
                         : { color: muted, background: 'transparent', border: '1px solid transparent' }}
@@ -1330,22 +1329,22 @@ export default function App() {
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Companion left sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className={`flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-all duration-300 overflow-x-auto md:overflow-x-visible w-full md:w-[210px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
-              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Companion</p>
+              className={`flex flex-col gap-2 p-3 shrink-0 transition-all duration-300 w-full md:w-[220px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
+              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-1" style={{ color: muted }}>Companion</p>
               {companionSections.map(s => (
                 <button key={s.id}
-                  className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
                   style={compSection === s.id
                     ? { background: dark ? 'rgba(2,132,199,0.12)' : '#eff6ff', color: '#0284c7', border: '1px solid rgba(2,132,199,0.2)' }
                     : { color: muted, background: 'transparent', border: '1px solid transparent' }}
                   onClick={() => setCompSection(s.id)}>
                   {s.icon}
                   {s.label}
-                  {compSection === s.id && <ChevronRight className="h-3 w-3 ml-auto hidden md:block" />}
+                  {compSection === s.id && <ChevronRight className="h-3 w-3 ml-auto" />}
                 </button>
               ))}
 
-              <div className="mt-4 px-1 hidden md:block">
+              <div className="mt-2 px-1">
                 <button className="w-full py-2 rounded-xl text-xs font-bold border transition-all"
                   style={{ color: '#0284c7', borderColor: 'rgba(2,132,199,0.3)', background: 'transparent' }}
                   onClick={syncVitals}>
@@ -1355,10 +1354,10 @@ export default function App() {
             </aside>
 
             {/* Companion center panel */}
-            <div className="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-3 md:p-5 gap-4">
+            <div className="flex flex-col flex-1 overflow-hidden p-2 md:p-5 gap-3 md:gap-4 max-w-full h-full">
               {/* Left panel forms */}
-              <div className="flex flex-col lg:flex-row gap-4 flex-1 overflow-y-auto md:overflow-hidden">
-                <div className="w-full lg:w-72 overflow-y-auto flex flex-col gap-4 shrink-0">
+              <div className="flex flex-col lg:flex-row gap-3 md:gap-4 flex-1 overflow-hidden max-w-full h-full">
+                <div className="w-full lg:w-72 overflow-y-auto flex flex-col gap-3 shrink-0 max-h-[38vh] lg:max-h-full">
 
                   {compSection === 'vitals' && (
                     <div className={tCard + ' p-4 flex flex-col gap-3'} style={{ background: cardBg, border: `1px solid ${border}` }}>
@@ -1451,8 +1450,8 @@ export default function App() {
                 </div>
 
                 {/* Chat area */}
-                <div className={tCard + ' flex flex-col flex-1 overflow-hidden'} style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="px-5 py-3 flex justify-between items-center shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
+                <div className={tCard + ' flex flex-col flex-1 min-h-[350px] lg:min-h-0 overflow-hidden shadow-sm'} style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="px-4 py-2.5 flex justify-between items-center shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
                     <h3 className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-sky-600" /> AI Companion
                     </h3>
@@ -1461,7 +1460,7 @@ export default function App() {
                       {chatStatus}
                     </span>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3"
+                  <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 min-h-0"
                     style={{ background: dark ? 'rgba(0,0,0,0.2)' : '#f8fafc' }}>
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`flex flex-col max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${msg.sender === 'user' ? 'self-end' : 'self-start'}`}
@@ -1472,18 +1471,18 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <div className="p-4 flex flex-col gap-2 shrink-0" style={{ borderTop: `1px solid ${border}` }}>
-                    {isRecording && <p className="text-xs text-rose-500 font-bold animate-pulse">🎙️ Listening... click mic to stop</p>}
-                    <div className="flex gap-2">
+                  <div className="p-3 md:p-4 flex flex-col gap-2 shrink-0 border-t sticky bottom-0 z-20" style={{ background: cardBg, borderColor: border }}>
+                    {isRecording && <p className="text-xs text-rose-500 font-bold animate-pulse">🎙️  Listening... click mic to stop</p>}
+                    <div className="flex gap-2 items-center">
                       <button className="h-10 w-10 rounded-xl flex items-center justify-center border transition-all shrink-0"
                         style={isRecording ? { background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444' } : { background: dark ? 'rgba(255,255,255,0.05)' : '#f1f5f9', borderColor: border, color: muted }}
-                        onClick={toggleVoice}><Mic className="h-4 w-4" /></button>
-                      <input className="flex-1 rounded-xl px-4 text-xs outline-none border transition-colors"
+                        onClick={toggleVoice}><Mic className="h-4 w-4 text-sky-600" /></button>
+                      <input className="flex-1 rounded-xl px-4 h-10 text-xs outline-none border transition-colors"
                         style={{ background: bg, border: `1px solid ${border}`, color: txt }}
                         placeholder="Ask about your vitals..."
                         value={chatTextInput} onChange={e => setChatTextInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendTextMessage()} />
-                      <button className="h-10 px-4 rounded-xl text-white font-bold flex items-center justify-center transition-all hover:opacity-90"
+                      <button className="h-10 px-4 rounded-xl text-white font-bold flex items-center justify-center transition-all hover:opacity-90 shrink-0 shadow-sm"
                         style={{ background: '#0284c7' }} onClick={sendTextMessage}>
                         <Send className="h-4 w-4" />
                       </button>
