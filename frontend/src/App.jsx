@@ -48,7 +48,12 @@ export default function App() {
 
   /* home left-nav */
   const [homeSection, setHomeSection] = useState('overview');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768; // AUTO-ON for Laptop, AUTO-OFF for Phone
+    }
+    return false;
+  });
   const [googleUser, setGoogleUser] = useState(() => {
     try {
       const saved = localStorage.getItem('google_user');
@@ -488,7 +493,7 @@ export default function App() {
 
   const fallbackMediaRecorderVoice = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setShowVoiceModal(true);
+      setChatStatus('Mic Not Supported');
       return;
     }
     
@@ -536,8 +541,7 @@ export default function App() {
     } catch (err) {
       console.error("Microphone recording error:", err);
       setIsRecording(false);
-      setChatStatus('Ready');
-      setShowVoiceModal(true);
+      setChatStatus('Mic Denied');
     }
   };
 
@@ -1542,60 +1546,6 @@ export default function App() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* --- VOICE ASSISTANT MODAL --- */}
-      {showVoiceModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 flex flex-col gap-4 shadow-2xl"
-            style={{ background: cardBg, border: `1px solid ${border}` }}>
-            <div className="flex justify-between items-center pb-2" style={{ borderBottom: `1px solid ${border}` }}>
-              <h3 className="text-sm font-black flex items-center gap-2 text-sky-500">
-                <Mic className="h-4 w-4 text-rose-500" /> Voice Assistant & Mic Settings
-              </h3>
-              <button className="opacity-60 hover:opacity-100 font-bold text-lg" onClick={() => setShowVoiceModal(false)}>✕</button>
-            </div>
-
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col gap-1">
-              <p className="font-bold text-amber-500 flex items-center gap-1.5">
-                <span>⚠️</span> Microphones Require HTTPS or localhost
-              </p>
-              <p className="text-[11px] leading-relaxed" style={{ color: muted }}>
-                Browsers restrict live microphone access over plain HTTP server IPs. Use quick prompts below to chat with AI instantly!
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-bold mb-2">⚡ Click a Quick Voice Prompt to ask AI:</p>
-              <div className="flex flex-col gap-2">
-                {[
-                  "🎤 Analyze my current heart vitals and arrhythmia risk.",
-                  "🎤 What does my ECG waveform rhythm show?",
-                  "🎤 Is my blood oxygen (SpO2) and heart rate normal?",
-                  "🎤 Explain the difference between MI and Arrhythmia."
-                ].map((promptText, idx) => (
-                  <button key={idx}
-                    className="w-full text-left p-2.5 rounded-xl border text-xs font-semibold hover:border-sky-500 transition-all flex items-center justify-between group"
-                    style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderColor: border }}
-                    onClick={() => {
-                      const cleanText = promptText.replace('🎤 ', '');
-                      setShowVoiceModal(false);
-                      sendTextMessageWithQuery(cleanText);
-                    }}>
-                    <span>{promptText}</span>
-                    <span className="text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity">Send →</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 border-t text-[10px]" style={{ borderColor: border, color: muted }}>
-              <p className="font-bold mb-1">💡 To enable real microphone on HTTP IP:</p>
-              <p>1. Open <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></p>
-              <p>2. Add <code>http://{typeof window !== 'undefined' ? window.location.host : 'your-server-ip'}</code> & set to <strong>Enabled</strong>.</p>
-            </div>
           </div>
         </div>
       )}
