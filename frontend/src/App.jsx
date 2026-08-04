@@ -1598,6 +1598,9 @@ export default function App() {
               <p>2. Add <code>http://{typeof window !== 'undefined' ? window.location.host : 'your-server-ip'}</code> & set to <strong>Enabled</strong>.</p>
             </div>
           </div>
+        </div>
+      )}
+
       {/* --- GOOGLE LOGIN MODAL --- */}
       {showGoogleModal && (
         <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
