@@ -57,13 +57,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Global Configuration & Sensor State
-ESP32_IP = "172.21.137.187"
+ESP32_IP = ""
 inflow_mode = "local" # "local" (polling) or "cloud" (pushed from ESP32)
 
 # Simulated natural temperature drift
-current_sim_temp = 36.7
+current_sim_temp = 0.0
 last_temp_update = 0.0
-smoothed_gsr = 75.0
+smoothed_gsr = 0.0
 
 # Cached hardware payload (Push Mode)
 cached_telemetry = {} # device_id -> dict
@@ -71,8 +71,8 @@ cached_telemetry = {} # device_id -> dict
 last_polled_data = {
     "bpm": 0,
     "spo2": 0,
-    "objTemp": 36.6,
-    "ambTemp": 26.5,
+    "objTemp": 0.0,
+    "ambTemp": 0.0,
     "gsr": 0.0,
     "gsrRaw": 0.0,
     "cond": 0.0,

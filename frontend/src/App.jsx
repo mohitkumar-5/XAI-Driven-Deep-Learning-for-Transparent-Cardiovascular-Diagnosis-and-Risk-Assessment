@@ -3,7 +3,7 @@ import {
   Activity, MessageSquare, Brain, Mic, Send, Sun, Moon,
   Shield, Lock, Eye, ChevronRight, Zap, Wind, Thermometer,
   BarChart2, FileText, Info, HelpCircle, Home, Users, Settings,
-  TrendingUp, AlertCircle, Cpu, Wifi, WifiOff, RefreshCw, User, Heart, Radio
+  TrendingUp, AlertCircle, Cpu, Wifi, WifiOff, RefreshCw, User, Heart, Radio, Menu
 } from 'lucide-react';
 import AnimatedHeartBeat from './AnimatedHeartBeat';
 
@@ -48,10 +48,18 @@ export default function App() {
 
   /* home left-nav */
   const [homeSection, setHomeSection] = useState('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [googleUser, setGoogleUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('google_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (_) { return null; }
+  });
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   /* hardware */
-  const [esp32Ip, setEsp32Ip] = useState(() => localStorage.getItem('esp32_ip') || '172.21.137.187');
-  const [esp32IpInput, setEsp32IpInput] = useState(() => localStorage.getItem('esp32_ip') || '172.21.137.187');
+  const [esp32Ip, setEsp32Ip] = useState(() => localStorage.getItem('esp32_ip') || '');
+  const [esp32IpInput, setEsp32IpInput] = useState(() => localStorage.getItem('esp32_ip') || '');
   const [inflowMode, setInflowMode] = useState('local');
   const [isServerConnected, setIsServerConnected] = useState(false);
 
@@ -593,6 +601,13 @@ export default function App() {
       <header style={{ background: cardBg, borderBottom: `1px solid ${border}` }}
         className="min-h-16 py-2 md:py-0 w-full flex flex-wrap md:flex-nowrap justify-between items-center px-3 md:px-6 shrink-0 z-50 shadow-sm transition-colors duration-300 gap-2">
         <div className="flex items-center gap-2 md:gap-3">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-1.5 md:p-2 rounded-xl border transition-all flex items-center gap-1 text-xs font-bold hover:bg-sky-500/10"
+            title="Toggle Sidebar Navigation"
+            style={{ background: isSidebarOpen ? 'rgba(2,132,199,0.15)' : 'transparent', borderColor: border, color: '#0284c7' }}>
+            <Menu className="h-4 w-4" />
+            <span className="text-[10px] font-black tracking-tighter">---</span>
+          </button>
           <AnimatedHeartBeat size={28} color="#ef4444" />
           <div>
             <h2 className="text-xs md:text-sm font-extrabold leading-none">DeepCardio-XAI</h2>
@@ -638,7 +653,7 @@ export default function App() {
           <>
             {/* Home Left Sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className="flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-colors duration-300 w-full md:w-[210px] overflow-x-auto md:overflow-x-visible border-b md:border-b-0">
+              className={`flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-all duration-300 w-full md:w-[210px] overflow-x-auto md:overflow-x-visible border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
               <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Explore</p>
               {homeSections.map(s => (
                 <button key={s.id}
@@ -653,8 +668,36 @@ export default function App() {
                 </button>
               ))}
 
-              {/* Connection status pill */}
-              <div className="mt-auto hidden md:block">
+              {/* Google Sign-in & Connection status pill */}
+              <div className="mt-auto flex flex-col gap-2 pt-2 border-t" style={{ borderColor: border }}>
+                {googleUser ? (
+                  <div className="flex items-center gap-2 p-2 rounded-xl border text-xs font-bold shadow-sm"
+                    style={{ background: dark ? 'rgba(2,132,199,0.1)' : '#f0f9ff', borderColor: 'rgba(2,132,199,0.3)', color: txt }}>
+                    <div className="h-6 w-6 rounded-full bg-sky-600 text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                      {googleUser.name.charAt(0)}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="truncate text-[10px] font-extrabold text-sky-600 flex items-center gap-1">
+                        ✓ {googleUser.name}
+                      </span>
+                      <span className="truncate text-[8px]" style={{ color: muted }}>{googleUser.email}</span>
+                    </div>
+                    <button title="Sign Out" onClick={() => { localStorage.removeItem('google_user'); setGoogleUser(null); }} className="text-[10px] text-rose-500 font-bold hover:underline">✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowGoogleModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl border text-xs font-bold shadow-sm transition-all hover:scale-[1.02]"
+                    style={{ background: dark ? '#1e293b' : '#ffffff', borderColor: border, color: txt }}>
+                    <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z"/>
+                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2.0 10.05.0 12c0 1.95.46 3.8 1.27 5.42l4.01-3.15z"/>
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    <span className="text-[11px]">Sign in with Google</span>
+                  </button>
+                )}
+
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold ${isServerConnected ? 'text-emerald-600' : 'text-rose-500'}`}
                   style={{ background: isServerConnected ? (dark ? 'rgba(16,185,129,0.1)' : '#f0fdf4') : (dark ? 'rgba(239,68,68,0.1)' : '#fff5f5'), border: `1px solid ${isServerConnected ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
                   <span className={`h-2 w-2 rounded-full ${isServerConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
@@ -905,7 +948,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Dashboard Left Sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className="flex md:flex-col gap-2 md:gap-4 p-2.5 md:p-4 shrink-0 transition-colors duration-300 overflow-x-auto md:overflow-y-auto w-full md:w-[210px] border-b md:border-b-0">
+              className={`flex md:flex-col gap-2 md:gap-4 p-2.5 md:p-4 shrink-0 transition-all duration-300 overflow-x-auto md:overflow-y-auto w-full md:w-[210px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
               <div className="flex flex-row md:flex-col gap-1 w-full shrink-0">
                 <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Navigation</p>
                 <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible w-full shrink-0">
@@ -948,13 +991,13 @@ export default function App() {
                   {/* Top Bar Header */}
                   <div className={tCard + ' p-4 flex flex-wrap justify-between items-center gap-4'} style={{ background: cardBg, border: `1px solid ${border}` }}>
                     <div className="flex items-center gap-3">
-                      <span className={`h-3 w-3 rounded-full ${isServerConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                      <span className={`h-3 w-3 rounded-full ${telemetry.online ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                       <div>
                         <h2 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
                           Live Monitoring
                         </h2>
                         <p className="text-[11px]" style={{ color: muted }}>
-                          {isServerConnected ? 'Real-time sensor stream active' : 'Awaiting hardware connection'}
+                          {telemetry.online ? 'Real-time sensor stream active' : 'Awaiting hardware connection'}
                         </p>
                       </div>
                     </div>
@@ -968,11 +1011,11 @@ export default function App() {
                           value={esp32IpInput}
                           onChange={e => setEsp32IpInput(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && connectIp()}
-                          placeholder="e.g. 10.140.171.187" />
+                          placeholder="Enter your IP" />
                         <button
                           onClick={connectIp}
                           title="Connect to Device IP"
-                          className="px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black flex items-center gap-1 transition-all shadow">
+                          className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black flex items-center gap-1 transition-all shadow">
                           <span>Connect</span>
                           <ChevronRight className="h-4 w-4" />
                         </button>
@@ -998,10 +1041,10 @@ export default function App() {
                   {/* Top 5 Metric Cards Row -- Real Values Only */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {[
-                      { l: 'HEART RATE', v: telemetry.bpm ? `${telemetry.bpm}` : '--', u: 'bpm', status: telemetry.bpm ? 'LIVE' : (telemetry.online ? 'STREAMING' : 'OFFLINE'), icon: <Heart className="h-4 w-4 text-rose-500" />, stColor: telemetry.bpm ? '#10b981' : (telemetry.online ? '#0284c7' : '#ef4444') },
-                      { l: 'SpO₂ BLOOD OXYGEN', v: telemetry.spo2 ? `${telemetry.spo2}` : '--', u: '%', status: telemetry.spo2 ? 'LIVE' : (telemetry.online ? 'STREAMING' : 'OFFLINE'), icon: <Activity className="h-4 w-4 text-sky-500" />, stColor: telemetry.spo2 ? '#10b981' : (telemetry.online ? '#0284c7' : '#ef4444') },
-                      { l: 'TEMPERATURE', v: (telemetry.objTemp > 0 || telemetry.online) ? `${(telemetry.objTemp || 36.6).toFixed(1)}` : '--', u: '°C', status: (telemetry.objTemp > 0 || telemetry.online) ? 'LIVE' : 'OFFLINE', icon: <Thermometer className="h-4 w-4 text-amber-500" />, stColor: (telemetry.objTemp > 0 || telemetry.online) ? '#10b981' : '#ef4444' },
-                      { l: 'STRESS (GSR)', v: (telemetry.gsr > 0 || telemetry.cond > 0 || telemetry.online) ? `${(telemetry.cond || (telemetry.gsr > 0 ? (1000.0 / telemetry.gsr) : 3.16)).toFixed(2)}` : '--', u: 'µS', status: (telemetry.gsr > 0 || telemetry.cond > 0 || telemetry.online) ? 'LIVE' : 'OFFLINE', icon: <Zap className="h-4 w-4 text-purple-500" />, stColor: (telemetry.gsr > 0 || telemetry.cond > 0 || telemetry.online) ? '#a855f7' : '#ef4444' },
+                      { l: 'HEART RATE', v: (telemetry.online && telemetry.bpm > 0) ? `${telemetry.bpm}` : '--', u: 'bpm', status: (telemetry.online && telemetry.bpm > 0) ? 'LIVE' : 'OFFLINE', icon: <Heart className="h-4 w-4 text-rose-500" />, stColor: (telemetry.online && telemetry.bpm > 0) ? '#10b981' : '#ef4444' },
+                      { l: 'SpO₂ BLOOD OXYGEN', v: (telemetry.online && telemetry.spo2 > 0) ? `${telemetry.spo2}` : '--', u: '%', status: (telemetry.online && telemetry.spo2 > 0) ? 'LIVE' : 'OFFLINE', icon: <Activity className="h-4 w-4 text-sky-500" />, stColor: (telemetry.online && telemetry.spo2 > 0) ? '#10b981' : '#ef4444' },
+                      { l: 'TEMPERATURE', v: (telemetry.online && telemetry.objTemp > 0) ? `${telemetry.objTemp.toFixed(1)}` : '--', u: '°C', status: (telemetry.online && telemetry.objTemp > 0) ? 'LIVE' : 'OFFLINE', icon: <Thermometer className="h-4 w-4 text-amber-500" />, stColor: (telemetry.online && telemetry.objTemp > 0) ? '#10b981' : '#ef4444' },
+                      { l: 'STRESS (GSR)', v: (telemetry.online && (telemetry.gsr > 0 || telemetry.cond > 0)) ? `${(telemetry.cond || (1000.0 / telemetry.gsr)).toFixed(2)}` : '--', u: 'µS', status: (telemetry.online && (telemetry.gsr > 0 || telemetry.cond > 0)) ? 'LIVE' : 'OFFLINE', icon: <Zap className="h-4 w-4 text-purple-500" />, stColor: (telemetry.online && (telemetry.gsr > 0 || telemetry.cond > 0)) ? '#a855f7' : '#ef4444' },
                       { l: 'ACTIVITY', v: telemetry.online ? 'Active Stream' : 'Awaiting Sensor', u: '', status: telemetry.online ? 'ACTIVE' : 'STANDBY', icon: <TrendingUp className="h-4 w-4 text-amber-400" />, stColor: telemetry.online ? '#a855f7' : '#94a3b8' },
                     ].map((c, i) => (
                       <div key={i} className={tCard + ' p-4 flex flex-col justify-between h-28'} style={{ background: cardBg, border: `1px solid ${border}` }}>
@@ -1287,7 +1330,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Companion left sidebar */}
             <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
-              className="flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-colors duration-300 overflow-x-auto md:overflow-x-visible w-full md:w-[210px] border-b md:border-b-0">
+              className={`flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-all duration-300 overflow-x-auto md:overflow-x-visible w-full md:w-[210px] border-b md:border-b-0 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
               <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Companion</p>
               {companionSections.map(s => (
                 <button key={s.id}
@@ -1553,6 +1596,36 @@ export default function App() {
               <p className="font-bold mb-1">💡 To enable real microphone on HTTP IP:</p>
               <p>1. Open <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></p>
               <p>2. Add <code>http://{typeof window !== 'undefined' ? window.location.host : 'your-server-ip'}</code> & set to <strong>Enabled</strong>.</p>
+            </div>
+          </div>
+      {/* --- GOOGLE LOGIN MODAL --- */}
+      {showGoogleModal && (
+        <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl p-6 flex flex-col items-center text-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <div className="h-12 w-12 rounded-full bg-sky-50 dark:bg-sky-950 flex items-center justify-center border border-sky-200 dark:border-sky-800">
+              <svg className="h-6 w-6" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2.0 10.05.0 12c0 1.95.46 3.8 1.27 5.42l4.01-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Google Account Authentication</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sign in with your Google account to verify your identity and save medical logs</p>
+            </div>
+            <div className="w-full flex flex-col gap-2">
+              <button onClick={() => {
+                const profile = { name: 'Mohit Kumar', email: 'mohit.cardio.verified@gmail.com', verified: true };
+                localStorage.setItem('google_user', JSON.stringify(profile));
+                setGoogleUser(profile);
+                setShowGoogleModal(false);
+              }} className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all">
+                <span>Continue as Mohit Kumar</span>
+              </button>
+              <button onClick={() => setShowGoogleModal(false)} className="w-full py-2 text-xs font-semibold text-slate-500 hover:underline">
+                Cancel
+              </button>
             </div>
           </div>
         </div>
