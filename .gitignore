@@ -1,26 +1,39 @@
-# Byte-compiled / optimized / DLL files
+# Python Byte-compiled & Environment files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.venv/
+venv/
+env/
+ENV/
 
-# Environment & Secret files (Keep API keys safe)
+# Secrets & Environment Variables (Keep API keys safe)
 .env
 .env.local
 .env.*.local
 
-# Virtual environments
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-
-# Data & Scratch directories
+# Raw Dataset Binaries & Large Files (Dataset instructions in AI/data/README.md)
+AI/data/*.mat
+AI/data/*.dat
+AI/data/*.hea
+AI/data/ptbxl/
+AI/data/mitdb/
 data/
-*.log
 *.csv
 scratch/
+
+# Application Logs
+*.log
+AI/logs/
+
+# Unused Model Checkpoints & Offline Plots in saved_models (Keeps repository lean & clean)
+AI/saved_models/*.png
+AI/saved_models/*.pth
+AI/saved_models/arrhythmia_*
+AI/saved_models/model.pkl
+AI/saved_models/scaler.pkl
+AI/saved_models/shap_explainer.pkl
 
 # Node / React Frontend Dependencies & Build Caches
 frontend/node_modules/
