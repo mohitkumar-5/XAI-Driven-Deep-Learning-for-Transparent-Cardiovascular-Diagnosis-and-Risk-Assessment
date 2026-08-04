@@ -103,8 +103,9 @@ export default function App() {
   const [chatTextInput, setChatTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
 
-  /* AI modal */
+  /* AI modal & Voice modal */
   const [showAiModal, setShowAiModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [aiReport, setAiReport] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiLoadingProgress, setAiLoadingProgress] = useState(0);
@@ -464,9 +465,22 @@ export default function App() {
     }
   };
 
+  const sendTextMessageWithQuery = async (queryStr) => {
+    const textToSend = queryStr || chatTextInput;
+    if (!textToSend.trim()) return;
+    setChatMessages(p => [...p, { sender: 'user', text: textToSend }]);
+    setChatTextInput('');
+    const fd = new FormData();
+    fd.append('query', textToSend);
+    fd.append('vitals', JSON.stringify({
+      bpm: compBpm, spo2: compSpo2, temp: compTemp, gsr: compGsr
+    }));
+    await queryChatAssistant(fd);
+  };
+
   const fallbackMediaRecorderVoice = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Microphone API not available. Ensure you are visiting http://127.0.0.1:8000 or http://localhost:8000.');
+      setShowVoiceModal(true);
       return;
     }
     
@@ -515,14 +529,7 @@ export default function App() {
       console.error("Microphone recording error:", err);
       setIsRecording(false);
       setChatStatus('Ready');
-
-      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
-        alert('Microphone Access Denied by Windows/Browser!\n\n1. Browser Site Settings: Click Lock icon next to http://localhost:8000 -> set Microphone to Allow.\n2. Windows OS Privacy Settings: Open Windows Settings -> Privacy & Security -> Microphone -> turn ON "Let desktop apps access your microphone".');
-      } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
-        alert('No microphone device found on your computer. Please check if your mic is connected.');
-      } else {
-        alert(`Microphone Error (${err?.name || 'Error'}): ${err?.message || 'Access blocked'}`);
-      }
+      setShowVoiceModal(true);
     }
   };
 
@@ -580,23 +587,23 @@ export default function App() {
      RENDER
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   return (
-    <div style={{ background: bg, color: txt }} className="flex flex-col h-screen w-screen overflow-hidden font-sans transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif", background: bg, color: txt }}>
+    <div style={{ background: bg, color: txt }} className="flex flex-col min-h-screen md:h-screen w-full md:w-screen overflow-x-hidden font-sans transition-colors duration-300" style={{ fontFamily: "'Outfit', sans-serif", background: bg, color: txt }}>
 
       {/* â•â•â• HEADER â•â•â• */}
       <header style={{ background: cardBg, borderBottom: `1px solid ${border}` }}
-        className="h-16 w-full flex justify-between items-center px-6 shrink-0 z-50 shadow-sm transition-colors duration-300">
-        <div className="flex items-center gap-3">
-          <AnimatedHeartBeat size={32} color="#ef4444" />
+        className="min-h-16 py-2 md:py-0 w-full flex flex-wrap md:flex-nowrap justify-between items-center px-3 md:px-6 shrink-0 z-50 shadow-sm transition-colors duration-300 gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
+          <AnimatedHeartBeat size={28} color="#ef4444" />
           <div>
-            <h2 className="text-sm font-extrabold leading-none">DeepCardio-XAI</h2>
-            <span className="text-[10px] font-semibold tracking-wider" style={{ color: muted }}>Advanced Cardiac Intelligence</span>
+            <h2 className="text-xs md:text-sm font-extrabold leading-none">DeepCardio-XAI</h2>
+            <span className="text-[9px] md:text-[10px] font-semibold tracking-wider hidden sm:inline" style={{ color: muted }}>Advanced Cardiac Intelligence</span>
           </div>
         </div>
 
-        <nav className="flex gap-2">
+        <nav className="flex gap-1.5 md:gap-2 overflow-x-auto max-w-full py-1 shrink-0">
           {[{ k: 'home', l: 'Home' }, { k: 'dashboard', l: 'Live Dashboard' }, { k: 'companion', l: 'AI Companion' }].map(p => (
             <button key={p.k}
-              className="px-5 py-2 rounded-full text-xs font-bold transition-all border"
+              className="px-3 md:px-5 py-1.5 md:py-2 rounded-full text-[11px] md:text-xs font-bold transition-all border whitespace-nowrap"
               style={activePage === p.k
                 ? { background: '#0284c7', color: '#fff', borderColor: '#0284c7' }
                 : { background: 'transparent', color: muted, borderColor: 'transparent' }}
@@ -624,30 +631,30 @@ export default function App() {
       </header>
 
       {/* --- MAIN --- */}
-      <main className="flex-1 w-full relative overflow-hidden flex">
+      <main className="flex-1 w-full relative overflow-y-auto md:overflow-hidden flex flex-col md:flex-row max-w-full">
 
         {/* PAGE: HOME */}
         {activePage === 'home' && (
           <>
             {/* Home Left Sidebar */}
-            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}`, width: 210 }}
-              className="flex flex-col gap-2 p-4 shrink-0 transition-colors duration-300">
-              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2" style={{ color: muted }}>Explore</p>
+            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
+              className="flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-colors duration-300 w-full md:w-[210px] overflow-x-auto md:overflow-x-visible border-b md:border-b-0">
+              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Explore</p>
               {homeSections.map(s => (
                 <button key={s.id}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                  className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
                   style={homeSection === s.id
                     ? { background: dark ? 'rgba(2,132,199,0.12)' : '#eff6ff', color: '#0284c7', border: `1px solid rgba(2,132,199,0.2)` }
                     : { color: muted, background: 'transparent', border: '1px solid transparent' }}
                   onClick={() => setHomeSection(s.id)}>
                   {s.icon}
                   {s.label}
-                  {homeSection === s.id && <ChevronRight className="h-3 w-3 ml-auto" />}
+                  {homeSection === s.id && <ChevronRight className="h-3 w-3 ml-auto hidden md:block" />}
                 </button>
               ))}
 
               {/* Connection status pill */}
-              <div className="mt-auto">
+              <div className="mt-auto hidden md:block">
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold ${isServerConnected ? 'text-emerald-600' : 'text-rose-500'}`}
                   style={{ background: isServerConnected ? (dark ? 'rgba(16,185,129,0.1)' : '#f0fdf4') : (dark ? 'rgba(239,68,68,0.1)' : '#fff5f5'), border: `1px solid ${isServerConnected ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
                   <span className={`h-2 w-2 rounded-full ${isServerConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
@@ -657,7 +664,7 @@ export default function App() {
             </aside>
 
             {/* Home main content -- scrollable */}
-            <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-10">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex flex-col gap-6 md:gap-10 max-w-full overflow-x-hidden">
 
               {/* -- OVERVIEW -- */}
               {homeSection === 'overview' && (<>
@@ -895,13 +902,13 @@ export default function App() {
 
         {/* PAGE: DASHBOARD */}
         {activePage === 'dashboard' && (
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Dashboard Left Sidebar */}
-            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}`, width: 210 }}
-              className="flex flex-col gap-4 p-4 shrink-0 transition-colors duration-300 overflow-y-auto">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2" style={{ color: muted }}>Navigation</p>
-                <div className="flex flex-col gap-1">
+            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
+              className="flex md:flex-col gap-2 md:gap-4 p-2.5 md:p-4 shrink-0 transition-colors duration-300 overflow-x-auto md:overflow-y-auto w-full md:w-[210px] border-b md:border-b-0">
+              <div className="flex flex-row md:flex-col gap-1 w-full shrink-0">
+                <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Navigation</p>
+                <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible w-full shrink-0">
                   {[
                     { id: 'dashboard', l: 'Dashboard', icon: <Home className="h-4 w-4" /> },
                     { id: 'patients', l: 'Patients', icon: <Users className="h-4 w-4" /> },
@@ -912,7 +919,7 @@ export default function App() {
                     { id: 'settings', l: 'Settings', icon: <Settings className="h-4 w-4" /> },
                   ].map(tab => (
                     <button key={tab.id}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                      className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
                       style={activeTab === tab.id
                         ? { color: '#0284c7', background: dark ? 'rgba(2,132,199,0.1)' : '#eff6ff', border: '1px solid rgba(2,132,199,0.2)' }
                         : { color: muted, background: 'transparent', border: '1px solid transparent' }}
@@ -935,7 +942,7 @@ export default function App() {
               </div>
             </aside>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6" style={{ background: dark ? '#060a12' : '#fdfbf7' }}>
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 flex flex-col gap-4 md:gap-6 max-w-full overflow-x-hidden" style={{ background: dark ? '#060a12' : '#fdfbf7' }}>
               {activeTab === 'dashboard' && (
                 <div className="flex flex-col gap-6">
                   {/* Top Bar Header */}
@@ -1277,25 +1284,25 @@ export default function App() {
              PAGE: COMPANION
         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         {activePage === 'companion' && (
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
             {/* Companion left sidebar */}
-            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}`, width: 210 }}
-              className="flex flex-col gap-2 p-4 shrink-0">
-              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2" style={{ color: muted }}>Companion</p>
+            <aside style={{ background: sidebarBg, borderRight: `1px solid ${border}` }}
+              className="flex md:flex-col gap-2 p-2.5 md:p-4 shrink-0 transition-colors duration-300 overflow-x-auto md:overflow-x-visible w-full md:w-[210px] border-b md:border-b-0">
+              <p className="text-[10px] font-black uppercase tracking-widest px-2 mb-2 hidden md:block" style={{ color: muted }}>Companion</p>
               {companionSections.map(s => (
                 <button key={s.id}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+                  className="flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap shrink-0 md:shrink md:w-full"
                   style={compSection === s.id
                     ? { background: dark ? 'rgba(2,132,199,0.12)' : '#eff6ff', color: '#0284c7', border: '1px solid rgba(2,132,199,0.2)' }
                     : { color: muted, background: 'transparent', border: '1px solid transparent' }}
                   onClick={() => setCompSection(s.id)}>
                   {s.icon}
                   {s.label}
-                  {compSection === s.id && <ChevronRight className="h-3 w-3 ml-auto" />}
+                  {compSection === s.id && <ChevronRight className="h-3 w-3 ml-auto hidden md:block" />}
                 </button>
               ))}
 
-              <div className="mt-4 px-1">
+              <div className="mt-4 px-1 hidden md:block">
                 <button className="w-full py-2 rounded-xl text-xs font-bold border transition-all"
                   style={{ color: '#0284c7', borderColor: 'rgba(2,132,199,0.3)', background: 'transparent' }}
                   onClick={syncVitals}>
@@ -1305,10 +1312,10 @@ export default function App() {
             </aside>
 
             {/* Companion center panel */}
-            <div className="flex flex-col flex-1 overflow-hidden p-5 gap-4">
+            <div className="flex flex-col flex-1 overflow-y-auto md:overflow-hidden p-3 md:p-5 gap-4">
               {/* Left panel forms */}
-              <div className="flex gap-4 flex-1 overflow-hidden">
-                <div className="w-72 overflow-y-auto flex flex-col gap-4 shrink-0">
+              <div className="flex flex-col lg:flex-row gap-4 flex-1 overflow-y-auto md:overflow-hidden">
+                <div className="w-full lg:w-72 overflow-y-auto flex flex-col gap-4 shrink-0">
 
                   {compSection === 'vitals' && (
                     <div className={tCard + ' p-4 flex flex-col gap-3'} style={{ background: cardBg, border: `1px solid ${border}` }}>
@@ -1493,6 +1500,60 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* --- VOICE ASSISTANT MODAL --- */}
+      {showVoiceModal && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 flex flex-col gap-4 shadow-2xl"
+            style={{ background: cardBg, border: `1px solid ${border}` }}>
+            <div className="flex justify-between items-center pb-2" style={{ borderBottom: `1px solid ${border}` }}>
+              <h3 className="text-sm font-black flex items-center gap-2 text-sky-500">
+                <Mic className="h-4 w-4 text-rose-500" /> Voice Assistant & Mic Settings
+              </h3>
+              <button className="opacity-60 hover:opacity-100 font-bold text-lg" onClick={() => setShowVoiceModal(false)}>✕</button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col gap-1">
+              <p className="font-bold text-amber-500 flex items-center gap-1.5">
+                <span>⚠️</span> Microphones Require HTTPS or localhost
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: muted }}>
+                Browsers restrict live microphone access over plain HTTP server IPs. Use quick prompts below to chat with AI instantly!
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold mb-2">⚡ Click a Quick Voice Prompt to ask AI:</p>
+              <div className="flex flex-col gap-2">
+                {[
+                  "🎤 Analyze my current heart vitals and arrhythmia risk.",
+                  "🎤 What does my ECG waveform rhythm show?",
+                  "🎤 Is my blood oxygen (SpO2) and heart rate normal?",
+                  "🎤 Explain the difference between MI and Arrhythmia."
+                ].map((promptText, idx) => (
+                  <button key={idx}
+                    className="w-full text-left p-2.5 rounded-xl border text-xs font-semibold hover:border-sky-500 transition-all flex items-center justify-between group"
+                    style={{ background: dark ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderColor: border }}
+                    onClick={() => {
+                      const cleanText = promptText.replace('🎤 ', '');
+                      setShowVoiceModal(false);
+                      sendTextMessageWithQuery(cleanText);
+                    }}>
+                    <span>{promptText}</span>
+                    <span className="text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity">Send →</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t text-[10px]" style={{ borderColor: border, color: muted }}>
+              <p className="font-bold mb-1">💡 To enable real microphone on HTTP IP:</p>
+              <p>1. Open <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></p>
+              <p>2. Add <code>http://{typeof window !== 'undefined' ? window.location.host : 'your-server-ip'}</code> & set to <strong>Enabled</strong>.</p>
+            </div>
           </div>
         </div>
       )}
