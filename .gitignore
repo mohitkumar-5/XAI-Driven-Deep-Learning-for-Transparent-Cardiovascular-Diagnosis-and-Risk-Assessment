@@ -23,10 +23,9 @@ data/
 *.csv
 scratch/
 
-# Application Logs & Decorative UI PNGs
+# Application Logs
 *.log
 AI/logs/
-static/images/
 
 # Exclude ALL PNG images inside saved_models (All evaluation plots are neatly organized in AI/plots/)
 AI/saved_models/*.png
