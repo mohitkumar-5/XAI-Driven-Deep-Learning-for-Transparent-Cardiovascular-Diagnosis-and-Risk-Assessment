@@ -194,11 +194,16 @@ export default function App() {
         ctx.fillStyle=dark?'#475569':'#94a3b8'; ctx.font='12px Outfit'; ctx.textAlign='center';
         ctx.fillText('Awaiting ECG telemetry...', w/2, h/2); return;
       }
-      ctx.strokeStyle = dark ? '#00d4ff' : '#0f172a';
-      ctx.lineWidth = 1.8; ctx.beginPath();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.0; ctx.beginPath();
+      const validS = samples.filter(s => typeof s === 'number' && s >= 0);
+      let minS = validS.length ? Math.min(...validS) : 1600;
+      let maxS = validS.length ? Math.max(...validS) : 2600;
+      if (maxS - minS < 250) { minS -= 350; maxS += 550; }
+      const rng = (maxS - minS) || 1;
       const step = w / samples.length;
       samples.forEach((s, i) => {
-        const yV = h - (s / 4095) * h;
+        const yV = h - 8 - ((s - minS) / rng) * (h - 16);
         i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i * step, yV);
       });
       ctx.stroke();

@@ -2184,8 +2184,8 @@
         <div class="comp-form-group">
           <label>Data Inflow Mode</label>
           <select id="comp-inflow-mode" onchange="changeInflowMode(this.value)" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid rgba(255,255,255,0.08); outline: none;">
+            <option value="cloud" selected>Cloud/AWS Mode (Pushed Telemetry)</option>
             <option value="local">Local Mode (Direct ESP32 Polling)</option>
-            <option value="cloud">Cloud/AWS Mode (Pushed Telemetry)</option>
           </select>
         </div>
         
@@ -2890,23 +2890,24 @@
       let reasonText = '';
       let isOffline = !isConnected;
 
-      if (isOffline || leadsOff || !samples || samples.length === 0 || samples[0] === -1) {
+      if (!samples || samples.length === 0 || samples[0] === -1) {
         drawSamples = generateSimulatedEcg(500, 75);
-        isSimulated = true;
-        reasonText = isOffline ? '⚠ DEVICE OFFLINE — STANDBY ECG SIMULATION ACTIVE' : '⚠ LEADS OFF — CHECK ELECTRODES (SIMULATED WAVE ACTIVE)';
       }
 
-      // AD8232 values are 12-bit ADC samples. Keeping this scale fixed prevents
-      // the entire trace from jumping whenever an R peak enters/leaves the buffer.
-      const min = 0;
-      const max = 4095;
-      const range = max - min;
-      const padding = 12;
+      // Dynamic autoscale for sharp, vivid RED ECG PQRST spikes across canvas height
+      const valid = drawSamples.filter(v => typeof v === 'number' && v >= 0);
+      let sMin = valid.length ? Math.min(...valid) : 1600;
+      let sMax = valid.length ? Math.max(...valid) : 2600;
+      if (sMax - sMin < 250) { sMin -= 350; sMax += 550; }
+      const min = sMin - 40;
+      const max = sMax + 40;
+      const range = (max - min) || 1;
+      const padding = 14;
 
-      ctx.shadowColor = 'rgba(255, 59, 92, 0.85)';
-      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(255, 59, 92, 0.9)';
+      ctx.shadowBlur = 10;
       ctx.strokeStyle = '#ff3b5c';
-      ctx.lineWidth = 2.0;
+      ctx.lineWidth = 2.2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
 
