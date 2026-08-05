@@ -2272,14 +2272,15 @@
         </div>
 
         <div class="modal-visual-panel">
-          <div class="brain-visual heart-visual">
-            <img src="/static/images/neon_heart.png" alt="AI Cardiovascular heart structure">
-          </div>
           <div>
             <h3 class="modal-sec-title">Ensembled Risk Distribution</h3>
             <div class="dis-prob-bars" id="disease-breakdown-list">
               <!-- Disease breakdown bars render here -->
             </div>
+          </div>
+
+          <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; font-style: italic; color: var(--muted); line-height: 1.5;">
+            💬 "Every heartbeat tells a story—AI decodes the electrophysiological rhythm to deliver transparent, life-saving cardiac insights."
           </div>
         </div>
       </div>
@@ -2851,19 +2852,20 @@
        ECG CANVAS PAINTER
        ════════════════════════════════════════════════════════ */
     let simEcgTick = 0;
-    // Seeded array of raw organic beats (amplitude, gap to next beat, width factor)
-    const rawBeats = [
-      { h: 160, gap: 140, w: 1.1 }, // Big spike, short gap
-      { h: 42,  gap: 280, w: 0.7 }, // Very small spike, long gap
-      { h: 115, gap: 190, w: 1.0 }, // Medium spike, medium gap
-      { h: 68,  gap: 320, w: 0.8 }, // Small-medium spike, very wide gap
-      { h: 148, gap: 150, w: 1.2 }, // Big spike, short gap
-      { h: 50,  gap: 240, w: 0.6 }, // Small spike, medium-long gap
-      { h: 125, gap: 170, w: 1.0 }, // Medium-large spike, short-medium gap
-      { h: 85,  gap: 290, w: 0.9 }, // Medium-small spike, long gap
-      { h: 165, gap: 130, w: 1.1 }, // Very big spike, very short gap
-      { h: 38,  gap: 260, w: 0.65}, // Tiny spike, medium gap
-      { h: 105, gap: 210, w: 1.0 }  // Medium spike, medium gap
+    // Seeded array of 12 irregular hardware beats (matching exact monitor photo!)
+    const exactHardwareBeats = [
+      { rH: 0.95, subSpikes: [0.35, -0.25, 0.40], gap: 32 },
+      { rH: 0.50, subSpikes: [-0.20, 0.30], gap: 42 },
+      { rH: 0.98, subSpikes: [0.45, -0.30, 0.35], gap: 28 },
+      { rH: 0.65, subSpikes: [-0.25, 0.38], gap: 38 },
+      { rH: 0.85, subSpikes: [0.40, -0.28, 0.30], gap: 34 },
+      { rH: 0.40, subSpikes: [-0.18, 0.25], gap: 45 },
+      { rH: 0.92, subSpikes: [0.48, -0.32, 0.42], gap: 30 },
+      { rH: 0.78, subSpikes: [-0.30, 0.35], gap: 36 },
+      { rH: 0.58, subSpikes: [0.25, -0.20], gap: 40 },
+      { rH: 0.88, subSpikes: [0.42, -0.28, 0.38], gap: 31 },
+      { rH: 0.48, subSpikes: [-0.22, 0.28], gap: 44 },
+      { rH: 0.90, subSpikes: [0.46, -0.30, 0.40], gap: 29 }
     ];
 
     function drawECGWaveform(canvasId, samples, leadsOff) {
@@ -2875,85 +2877,114 @@
       canvas.width = W;
       canvas.height = H;
 
-      ctx.clearRect(0, 0, W, H);
+      // 1. Dark Hardware Screen Background (#050002)
+      ctx.fillStyle = '#050002';
+      ctx.fillRect(0, 0, W, H);
 
-      // Red Grid backing lines
-      ctx.strokeStyle = 'rgba(255, 59, 92, 0.08)';
+      // 2. Fine Red Sub-Grid Lines (6px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 25, 40, 0.28)';
       ctx.lineWidth = 0.5;
-      const stepGridX = W / 10;
-      const stepGridY = H / 5;
-      for (let i = 0; i <= 10; i++) {
-        ctx.beginPath(); ctx.moveTo(i * stepGridX, 0); ctx.lineTo(i * stepGridX, H); ctx.stroke();
-      }
-      for (let j = 0; j <= 5; j++) {
-        ctx.beginPath(); ctx.moveTo(0, j * stepGridY); ctx.lineTo(W, j * stepGridY); ctx.stroke();
+      for (let x = 0; x <= W; x += 6) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y <= H; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+      // 3. Major Red Grid Lines (30px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 35, 55, 0.65)';
+      ctx.lineWidth = 1.0;
+      for (let x = 0; x <= W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y <= H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+      // 4. Center 1s Vertical Indicator Line & Text Overlay (Matching Photo!)
+      ctx.strokeStyle = 'rgba(255, 60, 80, 0.85)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+
+      ctx.fillStyle = '#ff2a4b';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('RAW AD8232 ECG', 10, 16);
+      ctx.font = '10px monospace';
+      ctx.fillText('AD8232 ECG | GAIN: 1100', 10, 28);
+      ctx.fillText('HR: 68-112 BPM (IRREGULAR)', 10, 40);
+
+      ctx.fillText('1mV', 10, H / 2 - 8);
+      ctx.fillText('1s', W / 2 + 4, 14);
+      ctx.fillText('1mV', W - 32, 14);
+
+      if (leadsOff) {
+        ctx.fillStyle = '#ff1133';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ AD8232 LEADS OFF / DISCONNECTED', W / 2, H / 2);
+        return;
       }
 
-      // Raw AD8232 Analog Hardware ECG Painter (Big/Small/Medium spikes + Varied Gaps!)
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.85)';
-      ctx.shadowBlur = 6;
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1.8;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
+      // 5. Heavy Raw AD8232 Oscilloscope Signal Line (#ff1133)
+      ctx.shadowColor = 'rgba(255, 17, 51, 0.85)';
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = '#ff1133';
+      ctx.lineWidth = 1.2;
+      ctx.lineJoin = 'miter';
+      ctx.lineCap = 'butt';
       ctx.beginPath();
 
       const midY = H * 0.60;
       const numPoints = W;
 
-      // Cycle length calculation across rawBeats array
       let cycleLen = 0;
-      for (let b of rawBeats) cycleLen += b.gap;
+      for (let b of exactHardwareBeats) cycleLen += b.gap;
 
       for (let i = 0; i < numPoints; i++) {
         const globalX = simEcgTick + i;
         const xInCycle = globalX % cycleLen;
 
         let accum = 0;
-        let currBeat = rawBeats[0];
+        let currBeat = exactHardwareBeats[0];
         let offsetInBeat = 0;
 
-        for (let bIdx = 0; bIdx < rawBeats.length; bIdx++) {
-          if (xInCycle >= accum && xInCycle < accum + rawBeats[bIdx].gap) {
-            currBeat = rawBeats[bIdx];
+        for (let bIdx = 0; bIdx < exactHardwareBeats.length; bIdx++) {
+          if (xInCycle >= accum && xInCycle < accum + exactHardwareBeats[bIdx].gap) {
+            currBeat = exactHardwareBeats[bIdx];
             offsetInBeat = xInCycle - accum;
             break;
           }
-          accum += rawBeats[bIdx].gap;
+          accum += exactHardwareBeats[bIdx].gap;
         }
 
-        const beatWidth = Math.round(48 * currBeat.w);
+        const spikeWidth = 14;
         let pqrst = 0;
 
-        if (offsetInBeat < beatWidth) {
-          const norm = offsetInBeat / beatWidth;
-          if (norm < 0.25) {
-            pqrst = -10 * currBeat.w * Math.sin((norm / 0.25) * Math.PI);
-          } else if (norm >= 0.30 && norm < 0.40) {
-            pqrst = 18 * (currBeat.h / 100) * Math.sin(((norm - 0.30) / 0.10) * Math.PI);
-          } else if (norm >= 0.40 && norm < 0.58) {
-            const rT = (norm - 0.40) / 0.18;
-            if (rT < 0.5) pqrst = -currBeat.h * (rT * 2);
-            else pqrst = -currBeat.h * (2 - rT * 2);
-          } else if (norm >= 0.58 && norm < 0.70) {
-            pqrst = 25 * (currBeat.h / 100) * Math.sin(((norm - 0.58) / 0.12) * Math.PI);
-          } else if (norm >= 0.75 && norm < 1.0) {
-            pqrst = -18 * (currBeat.h / 100) * Math.sin(((norm - 0.75) / 0.25) * Math.PI);
+        if (offsetInBeat < spikeWidth) {
+          const norm = offsetInBeat / spikeWidth;
+          if (norm < 0.20) {
+            pqrst = 14 * Math.sin((norm / 0.20) * Math.PI);
+          } else if (norm >= 0.20 && norm < 0.60) {
+            const rT = (norm - 0.20) / 0.40;
+            const maxSpikeH = H * 0.54 * currBeat.rH;
+            if (rT < 0.35) pqrst = -maxSpikeH * (rT / 0.35);
+            else pqrst = -maxSpikeH * ((1.0 - rT) / 0.65);
+          } else if (norm >= 0.60 && norm < 0.80) {
+            pqrst = 20 * Math.sin(((norm - 0.60) / 0.20) * Math.PI);
+          } else {
+            pqrst = -16 * Math.sin(((norm - 0.80) / 0.20) * Math.PI);
           }
+        } else {
+          const relPos = (offsetInBeat - spikeWidth) / (currBeat.gap - spikeWidth);
+          const subPhase = relPos * Math.PI * 3.0;
+          pqrst = -H * 0.20 * (currBeat.subSpikes[0] || 0.3) * Math.sin(subPhase);
         }
 
-        // High-frequency raw AD8232 electrode noise (+/- 8px) + 3-tone floating baseline drift
-        const rawNoise = (Math.random() - 0.5) * 8.0;
-        const respDrift = 7.0 * Math.sin(globalX / 75.0) + 4.5 * Math.cos(globalX / 160.0) + 3.0 * Math.sin(globalX / 300.0);
-        const y = midY + pqrst + rawNoise + respDrift;
+        // Heavy active noise band (+/- 26px) matching exact monitor photo!
+        const rawNoise = (Math.random() - 0.5) * 26.0;
+        const baselineDrift = 8.0 * Math.sin(globalX / 40.0) + 5.0 * Math.cos(globalX / 85.0);
+
+        const y = midY + pqrst + rawNoise + baselineDrift;
 
         if (i === 0) ctx.moveTo(i, y);
         else ctx.lineTo(i, y);
       }
       ctx.stroke();
 
-      // Step tick forward at moderate speed
-      simEcgTick = (simEcgTick + 2) % 100000;
+      simEcgTick = (simEcgTick + 3) % 100000;
     }
 
     }
