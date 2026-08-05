@@ -64,6 +64,7 @@ inflow_mode = "cloud" # Default to AWS Cloud pushed mode
 current_sim_temp = 0.0
 last_temp_update = 0.0
 smoothed_gsr = 0.0
+last_push_timestamp = 0.0
 
 # Cached hardware payload (Push Mode)
 cached_telemetry = {} # device_id -> dict
@@ -207,7 +208,7 @@ def esp32_polling_thread():
     ECG_POLL_INTERVAL = 2.0  # Only fetch ECG every 2s (huge payload)
     
     while True:
-        if inflow_mode != "local":
+        if inflow_mode != "local" or (time.monotonic() - last_push_timestamp < 10.0):
             time.sleep(1.0)
             continue
             
@@ -385,8 +386,9 @@ async def api_config(request: Request):
 # IoT Cloud Inflow POST endpoint
 @app.post("/api/push-telemetry")
 async def push_telemetry(payload: Dict[str, Any]):
-    global sequence, last_packet_fingerprint, ecg_buffer, ecg_leads_off
+    global sequence, last_packet_fingerprint, ecg_buffer, ecg_leads_off, last_push_timestamp
     try:
+        last_push_timestamp = time.monotonic()
         device_id = payload.get("device_id", "Patient_Default")
         bpm = int(finite_number(payload.get("bpm")))
         spo2 = int(finite_number(payload.get("spo2")))

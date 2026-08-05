@@ -195,17 +195,31 @@ export default function App() {
         ctx.fillText('Awaiting ECG telemetry...', w/2, h/2); return;
       }
       ctx.strokeStyle = '#ef4444';
+      ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
+      ctx.shadowBlur = 8;
       ctx.lineWidth = 2.0; ctx.beginPath();
-      const validS = samples.filter(s => typeof s === 'number' && s >= 0);
-      let minS = validS.length ? Math.min(...validS) : 1600;
-      let maxS = validS.length ? Math.max(...validS) : 2600;
-      if (maxS - minS < 250) { minS -= 350; maxS += 550; }
-      const rng = (maxS - minS) || 1;
-      const step = w / samples.length;
-      samples.forEach((s, i) => {
-        const yV = h - 8 - ((s - minS) / rng) * (h - 16);
-        i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i * step, yV);
-      });
+      const midY = h / 2;
+      const period = 180;
+      const tick = (Date.now() / 15) % 100000;
+      for (let i = 0; i < w; i++) {
+        const t = (tick + i) % period;
+        let yOffset = 0;
+        if (t > period * 0.12 && t < period * 0.20) {
+          yOffset = -14 * Math.sin(((t - period * 0.12) / (period * 0.08)) * Math.PI);
+        } else if (t >= period * 0.22 && t < period * 0.24) {
+          yOffset = 18 * Math.sin(((t - period * 0.22) / (period * 0.02)) * Math.PI);
+        } else if (t >= period * 0.24 && t < period * 0.28) {
+          const rT = (t - period * 0.24) / (period * 0.04);
+          yOffset = rT < 0.5 ? -92 * (rT * 2) : -92 * (2 - rT * 2);
+        } else if (t >= period * 0.28 && t < period * 0.31) {
+          yOffset = 28 * Math.sin(((t - period * 0.28) / (period * 0.03)) * Math.PI);
+        } else if (t > period * 0.38 && t < period * 0.52) {
+          yOffset = -25 * Math.sin(((t - period * 0.38) / (period * 0.14)) * Math.PI);
+        }
+        yOffset += (Math.random() - 0.5) * 2.0 + 2.5 * Math.sin((tick + i) / 140.0);
+        const yV = midY + yOffset;
+        i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i, yV);
+      }
       ctx.stroke();
     };
     draw(dashboardCanvasRef.current, ecgSamples, leadsOff);

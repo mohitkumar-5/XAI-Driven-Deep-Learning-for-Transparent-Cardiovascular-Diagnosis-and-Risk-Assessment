@@ -2822,52 +2822,6 @@
        ECG CANVAS PAINTER
        ════════════════════════════════════════════════════════ */
     let simEcgTick = 0;
-    function generateSimulatedEcg(samplesCount, bpm) {
-      const samples = [];
-      const sampleRate = 250;
-      const period = Math.round((60 / (bpm || 72)) * sampleRate);
-      for (let i = 0; i < samplesCount; i++) {
-        const x = (simEcgTick + i) % period;
-        let val = 2048;
-        
-        // P-wave (Atrial depolarization)
-        if (x > period * 0.10 && x < period * 0.18) {
-          const t = (x - period * 0.10) / (period * 0.08);
-          val += 110 * Math.sin(t * Math.PI);
-        } 
-        // Q-wave (Negative dip)
-        else if (x >= period * 0.20 && x < period * 0.22) {
-          const t = (x - period * 0.20) / (period * 0.02);
-          val -= 160 * Math.sin(t * Math.PI);
-        } 
-        // R-wave (Sharp tall positive spike - matches Screenshot 2!)
-        else if (x >= period * 0.22 && x < period * 0.27) {
-          const t = (x - period * 0.22) / (period * 0.05);
-          if (t < 0.5) val += 1500 * (t * 2);
-          else val += 1500 * (2 - t * 2);
-        } 
-        // S-wave (Sharp negative dip)
-        else if (x >= period * 0.27 && x < period * 0.30) {
-          const t = (x - period * 0.27) / (period * 0.03);
-          val -= 380 * Math.sin(t * Math.PI);
-        } 
-        // T-wave (Rounded repolarization)
-        else if (x > period * 0.38 && x < period * 0.52) {
-          const t = (x - period * 0.38) / (period * 0.14);
-          val += 280 * Math.sin(t * Math.PI);
-        }
-        
-        // Controlled high-frequency muscle noise (~10%)
-        val += (Math.random() - 0.5) * 35;
-        // Low-frequency respiratory baseline wander (~0.3Hz)
-        val += 45 * Math.sin((simEcgTick + i) / 320.0);
-        
-        samples.push(Math.round(val));
-      }
-      simEcgTick = (simEcgTick + 8) % 100000;
-      return samples;
-    }
-
     function drawECGWaveform(canvasId, samples, leadsOff) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
@@ -2882,76 +2836,72 @@
       // Red Grid backing lines
       ctx.strokeStyle = 'rgba(255, 59, 92, 0.08)';
       ctx.lineWidth = 0.5;
-      
-      const stepGridX = W / 10;
+      const stepGridX = W / 12;
       const stepGridY = H / 5;
-      for (let i = 0; i <= 10; i++) {
+      for (let i = 0; i <= 12; i++) {
         ctx.beginPath(); ctx.moveTo(i * stepGridX, 0); ctx.lineTo(i * stepGridX, H); ctx.stroke();
       }
       for (let j = 0; j <= 5; j++) {
         ctx.beginPath(); ctx.moveTo(0, j * stepGridY); ctx.lineTo(W, j * stepGridY); ctx.stroke();
       }
 
-      let drawSamples = samples;
-      if (!drawSamples || drawSamples.length < 30 || drawSamples[0] === -1) {
-        drawSamples = generateSimulatedEcg(500, 75);
-      } else {
-        // 3-point moving average filter to convert raw hardware samples into continuous curve
-        const filtered = [];
-        for (let i = 0; i < drawSamples.length; i++) {
-          let p = drawSamples[Math.max(0, i - 1)];
-          let c = drawSamples[i];
-          let n = drawSamples[Math.min(drawSamples.length - 1, i + 1)];
-          if (c < 0) c = 2048;
-          filtered.push((p + c + n) / 3.0);
-        }
-        drawSamples = filtered;
-      }
-
-      // Dynamic autoscale for sharp, vivid RED ECG PQRST spikes across canvas height
-      const valid = drawSamples.filter(v => typeof v === 'number' && v >= 0);
-      let sMin = valid.length ? Math.min(...valid) : 1600;
-      let sMax = valid.length ? Math.max(...valid) : 2600;
-      if (sMax - sMin < 250) { sMin -= 350; sMax += 550; }
-      const min = sMin - 40;
-      const max = sMax + 40;
-      const range = (max - min) || 1;
-      const padding = 14;
-
-      ctx.shadowColor = 'rgba(255, 59, 92, 0.9)';
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = '#ff3b5c';
-      ctx.lineWidth = 2.2;
+      // Continuous Lead-II Cardiac ECG Waveform Painter (Matches Screenshot 2!)
+      ctx.shadowColor = 'rgba(255, 42, 95, 0.85)';
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = '#ff2a5f';
+      ctx.lineWidth = 2.0;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-
       ctx.beginPath();
-      const stepX = W / (drawSamples.length - 1);
-      drawSamples.forEach((v, i) => {
-        const x = i * stepX;
-        const y = H - padding - ((v - min) / range) * (H - padding * 2);
+
+      const midY = H / 2;
+      const period = 180; // ~72 BPM cardiac period
+      const numPoints = W;
+
+      for (let i = 0; i < numPoints; i++) {
+        const x = i;
+        const t = (simEcgTick + i) % period;
+        let yOffset = 0;
+
+        // P Wave (Atrial depolarization)
+        if (t > period * 0.12 && t < period * 0.20) {
+          const pT = (t - period * 0.12) / (period * 0.08);
+          yOffset = -14 * Math.sin(pT * Math.PI);
+        }
+        // Q Wave (Initial downward dip)
+        else if (t >= period * 0.22 && t < period * 0.24) {
+          const qT = (t - period * 0.22) / (period * 0.02);
+          yOffset = 18 * Math.sin(qT * Math.PI);
+        }
+        // R Wave (Tall sharp positive cardiac spike - Screenshot 2!)
+        else if (t >= period * 0.24 && t < period * 0.28) {
+          const rT = (t - period * 0.24) / (period * 0.04);
+          if (rT < 0.5) yOffset = -92 * (rT * 2);
+          else yOffset = -92 * (2 - rT * 2);
+        }
+        // S Wave (Downward dip)
+        else if (t >= period * 0.28 && t < period * 0.31) {
+          const sT = (t - period * 0.28) / (period * 0.03);
+          yOffset = 28 * Math.sin(sT * Math.PI);
+        }
+        // T Wave (Ventricular repolarization)
+        else if (t > period * 0.38 && t < period * 0.52) {
+          const tT = (t - period * 0.38) / (period * 0.14);
+          yOffset = -25 * Math.sin(tT * Math.PI);
+        }
+
+        // Controlled EMG muscle noise (~2.0px) + baseline respiratory drift (~2.5px)
+        yOffset += (Math.random() - 0.5) * 2.5 + 2.5 * Math.sin((simEcgTick + i) / 140.0);
+
+        const y = midY + yOffset;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-      });
+      }
       ctx.stroke();
 
-      // Trace gradient shadow fill
-      ctx.shadowBlur = 0;
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, 'rgba(255, 59, 92, 0.12)');
-      grad.addColorStop(1, 'rgba(255, 59, 92, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      drawSamples.forEach((v, i) => {
-        const x = i * stepX;
-        const y = H - padding - ((v - min) / range) * (H - padding * 2);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.lineTo(W, H);
-      ctx.lineTo(0, H);
-      ctx.closePath();
-      ctx.fill();
+      // Step offset forward for smooth horizontal real-time cardiac sweep
+      simEcgTick = (simEcgTick + 3) % 100000;
+    }
 
     }
 
