@@ -2661,10 +2661,10 @@
       const loraTx = s.loraTxCount;
 
       // Update Top card elements
-      setNode('val-bpm', bpm || '--');
-      setNode('val-bpm-status', bpm > 100 ? 'TACHYCARDIA' : bpm < 60 && bpm > 0 ? 'BRADYCARDIA' : 'NORMAL');
-      setNode('val-spo2', spo2 || '--');
-      setNode('val-spo2-status', spo2 < 95 ? 'HYPOXIA' : spo2 < 97 ? 'LOW' : 'NORMAL');
+      setNode('val-bpm', (bpm && bpm > 0) ? bpm : '--');
+      setNode('val-bpm-status', (bpm && bpm > 0) ? (bpm > 100 ? 'TACHYCARDIA' : bpm < 60 ? 'BRADYCARDIA' : 'NORMAL') : 'NO FINGER / REMOVED');
+      setNode('val-spo2', (spo2 && spo2 > 0) ? spo2 + "%" : '--');
+      setNode('val-spo2-status', (spo2 && spo2 > 0) ? (spo2 < 95 ? 'HYPOXIA' : spo2 < 97 ? 'LOW' : 'NORMAL') : 'NO FINGER / REMOVED');
       setNode('val-temp', temp || '--');
       setNode('val-temp-status', temp > 37.8 ? 'FEVER' : 'NORMAL');
       setNode('val-gsr', s.gsrOK ? cond : '--');

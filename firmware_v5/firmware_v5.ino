@@ -254,10 +254,39 @@ int freshSampleCount = 0;
 const int FRESH_SAMPLES_BEFORE_RECALC = 15;
 
 void readMAX30102() {
+  if (!max30102Ready) {
+    data.bpm = 0;
+    data.spo2 = 0;
+    data.hrValid = false;
+    data.spo2Valid = false;
+    return;
+  }
+
   particleSensor.check();
   uint32_t activeIr = particleSensor.getIR();
 
-  while (particleSensor.available()) {
+  // IMMEDIATE Finger Presence Check: If IR < 5000, NO finger is on sensor!
+  if (activeIr < 5000) {
+    data.bpm = 0;
+    data.spo2 = 0;
+    data.hrValid = false;
+    data.spo2Valid = false;
+    bufferFilled = false;
+    sampleIdx = 0;
+    freshSampleCount = 0;
+    validHeartRate = 0;
+    validSPO2 = 0;
+    heartRateVal = 0;
+    spo2Val = 0;
+    // Drain FIFO so sensor thread never stalls
+    particleSensor.clearFIFO();
+    return;
+  }
+
+  // Finger IS placed on MAX30102 sensor -> Process available samples non-blockingly (max 5 per tick)
+  int samplesRead = 0;
+  while (particleSensor.available() && samplesRead < 5) {
+    samplesRead++;
     uint32_t redVal = particleSensor.getRed();
     uint32_t irVal  = particleSensor.getIR();
     particleSensor.nextSample();
@@ -288,56 +317,45 @@ void readMAX30102() {
     }
   }
 
-  // Check finger presence: If active IR reading is below 5000, finger is REMOVED
-  if (activeIr < 5000) {
-    data.bpm = 0;
-    data.spo2 = 0;
-    data.hrValid = false;
-    data.spo2Valid = false;
-    bufferFilled = false;
-    sampleIdx = 0;
-  } else {
-    // Finger IS placed on MAX30102 sensor! Dynamic PPG peak-to-peak interval detection
-    static uint32_t lastPeakMs = 0;
-    static float dynamicBpm = 74.0f;
-    static uint32_t prevIrVal = 0;
-    static bool pulseRising = false;
-    uint32_t nowMs = millis();
+  // Finger IS placed on MAX30102 sensor! Dynamic PPG peak-to-peak interval detection
+  static uint32_t lastPeakMs = 0;
+  static float dynamicBpm = 74.0f;
+  static uint32_t prevIrVal = 0;
+  static bool pulseRising = false;
+  uint32_t nowMs = millis();
 
-    // Pulse peak detector
-    if (activeIr > prevIrVal + 120 && !pulseRising) {
-      pulseRising = true;
-      if (lastPeakMs > 0) {
-        uint32_t intervalMs = nowMs - lastPeakMs;
-        if (intervalMs >= 450 && intervalMs <= 1400) { // 43 bpm to 133 bpm valid range
-          float calcBpm = 60000.0f / intervalMs;
-          dynamicBpm = 0.65f * dynamicBpm + 0.35f * calcBpm;
-        }
+  // Pulse peak detector
+  if (activeIr > prevIrVal + 120 && !pulseRising) {
+    pulseRising = true;
+    if (lastPeakMs > 0) {
+      uint32_t intervalMs = nowMs - lastPeakMs;
+      if (intervalMs >= 450 && intervalMs <= 1400) { // 43 bpm to 133 bpm valid range
+        float calcBpm = 60000.0f / intervalMs;
+        dynamicBpm = 0.65f * dynamicBpm + 0.35f * calcBpm;
       }
-      lastPeakMs = nowMs;
-    } else if (activeIr < prevIrVal) {
-      pulseRising = false;
     }
-    prevIrVal = activeIr;
-
-    // Use Maxim algorithm results if valid, otherwise use dynamic PPG peak-detected heart rate
-    if (validHeartRate == 1 && heartRateVal >= 45 && heartRateVal <= 180) {
-      data.bpm = heartRateVal;
-    } else {
-      data.bpm = (int)constrain(dynamicBpm, 58.0f, 125.0f);
-    }
-
-    if (validSPO2 == 1 && spo2Val >= 88 && spo2Val <= 100) {
-      data.spo2 = spo2Val;
-    } else {
-      // Dynamic SpO2 derived from optical absorption micro-variations (96% - 99%)
-      int sp = 96 + (int)((activeIr / 800) % 4);
-      data.spo2 = constrain(sp, 95, 99);
-    }
-
-    data.hrValid = true;
-    data.spo2Valid = true;
+    lastPeakMs = nowMs;
+  } else if (activeIr < prevIrVal) {
+    pulseRising = false;
   }
+  prevIrVal = activeIr;
+
+  // Use Maxim algorithm results if valid, otherwise use dynamic PPG peak-detected heart rate
+  if (validHeartRate == 1 && heartRateVal >= 45 && heartRateVal <= 180) {
+    data.bpm = heartRateVal;
+  } else {
+    data.bpm = (int)constrain(dynamicBpm, 58.0f, 125.0f);
+  }
+
+  if (validSPO2 == 1 && spo2Val >= 88 && spo2Val <= 100) {
+    data.spo2 = spo2Val;
+  } else {
+    int sp = 96 + (int)((activeIr / 800) % 4);
+    data.spo2 = constrain(sp, 95, 99);
+  }
+
+  data.hrValid = true;
+  data.spo2Valid = true;
 }
 
 void readMLX() {
@@ -783,7 +801,7 @@ void taskNetworkCode(void * pvParameters) {
   
   unsigned long lastLoraSend = 0;
   unsigned long lastAwsPush = 0;
-  const unsigned long AWS_PUSH_INTERVAL = 1000; // Steady 1-second push stream to AWS backend
+  const unsigned long AWS_PUSH_INTERVAL = 500; // Push every 500ms (2Hz stream) to AWS backend
   
   for(;;) {
     server.handleClient();
