@@ -783,7 +783,7 @@ void taskNetworkCode(void * pvParameters) {
   
   unsigned long lastLoraSend = 0;
   unsigned long lastAwsPush = 0;
-  const unsigned long AWS_PUSH_INTERVAL = 2000; // Real-time push every 2 seconds to AWS backend
+  const unsigned long AWS_PUSH_INTERVAL = 500; // Ultra-fast push every 500ms (2Hz stream) to AWS backend
   
   for(;;) {
     server.handleClient();

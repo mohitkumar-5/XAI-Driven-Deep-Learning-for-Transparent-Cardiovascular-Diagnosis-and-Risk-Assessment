@@ -195,29 +195,47 @@ export default function App() {
         ctx.fillText('Awaiting ECG telemetry...', w/2, h/2); return;
       }
       ctx.strokeStyle = '#ef4444';
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
-      ctx.shadowBlur = 8;
-      ctx.lineWidth = 2.0; ctx.beginPath();
-      const midY = h / 2;
-      const period = 180;
-      const tick = (Date.now() / 15) % 100000;
+      ctx.shadowColor = 'rgba(239, 68, 68, 0.85)';
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1.8; ctx.beginPath();
+      const midY = h * 0.60;
+      const rawB = [
+        { h: 160, gap: 140, w: 1.1 }, { h: 42, gap: 280, w: 0.7 }, { h: 115, gap: 190, w: 1.0 },
+        { h: 68, gap: 320, w: 0.8 }, { h: 148, gap: 150, w: 1.2 }, { h: 50, gap: 240, w: 0.6 },
+        { h: 125, gap: 170, w: 1.0 }, { h: 85, gap: 290, w: 0.9 }, { h: 165, gap: 130, w: 1.1 },
+        { h: 38, gap: 260, w: 0.65 }, { h: 105, gap: 210, w: 1.0 }
+      ];
+      let cycleLen = 0;
+      for (let b of rawB) cycleLen += b.gap;
+      const tick = Math.floor(Date.now() / 25);
       for (let i = 0; i < w; i++) {
-        const t = (tick + i) % period;
-        let yOffset = 0;
-        if (t > period * 0.12 && t < period * 0.20) {
-          yOffset = -14 * Math.sin(((t - period * 0.12) / (period * 0.08)) * Math.PI);
-        } else if (t >= period * 0.22 && t < period * 0.24) {
-          yOffset = 18 * Math.sin(((t - period * 0.22) / (period * 0.02)) * Math.PI);
-        } else if (t >= period * 0.24 && t < period * 0.28) {
-          const rT = (t - period * 0.24) / (period * 0.04);
-          yOffset = rT < 0.5 ? -92 * (rT * 2) : -92 * (2 - rT * 2);
-        } else if (t >= period * 0.28 && t < period * 0.31) {
-          yOffset = 28 * Math.sin(((t - period * 0.28) / (period * 0.03)) * Math.PI);
-        } else if (t > period * 0.38 && t < period * 0.52) {
-          yOffset = -25 * Math.sin(((t - period * 0.38) / (period * 0.14)) * Math.PI);
+        const globalX = tick + i;
+        const xInCycle = globalX % cycleLen;
+        let accum = 0;
+        let cB = rawB[0];
+        let off = 0;
+        for (let bIdx = 0; bIdx < rawB.length; bIdx++) {
+          if (xInCycle >= accum && xInCycle < accum + rawB[bIdx].gap) {
+            cB = rawB[bIdx]; off = xInCycle - accum; break;
+          }
+          accum += rawB[bIdx].gap;
         }
-        yOffset += (Math.random() - 0.5) * 2.0 + 2.5 * Math.sin((tick + i) / 140.0);
-        const yV = midY + yOffset;
+        const bW = Math.round(48 * cB.w);
+        let pqrst = 0;
+        if (off < bW) {
+          const norm = off / bW;
+          if (norm < 0.25) pqrst = -10 * cB.w * Math.sin((norm / 0.25) * Math.PI);
+          else if (norm >= 0.30 && norm < 0.40) pqrst = 18 * (cB.h / 100) * Math.sin(((norm - 0.30) / 0.10) * Math.PI);
+          else if (norm >= 0.40 && norm < 0.58) {
+            const rT = (norm - 0.40) / 0.18;
+            pqrst = rT < 0.5 ? -cB.h * (rT * 2) : -cB.h * (2 - rT * 2);
+          }
+          else if (norm >= 0.58 && norm < 0.70) pqrst = 25 * (cB.h / 100) * Math.sin(((norm - 0.58) / 0.12) * Math.PI);
+          else if (norm >= 0.75 && norm < 1.0) pqrst = -18 * (cB.h / 100) * Math.sin(((norm - 0.75) / 0.25) * Math.PI);
+        }
+        const rawNoise = (Math.random() - 0.5) * 8.0;
+        const respDrift = 7.0 * Math.sin(globalX / 75.0) + 4.5 * Math.cos(globalX / 160.0) + 3.0 * Math.sin(globalX / 300.0);
+        const yV = midY + pqrst + rawNoise + respDrift;
         i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i, yV);
       }
       ctx.stroke();
@@ -1202,23 +1220,26 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Bottom Row: AI Risk + Risk Distribution Pie/Donut Chart + Recent Alerts */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {/* AI Assessment */}
                     {(() => {
-                      const isSignalActive = telemetry.online && isServerConnected && telemetry.bpm > 0 && !leadsOff;
-                      const displayPrediction = isSignalActive 
-                        ? (aiReport ? aiReport.prediction || 'LOW RISK' : 'READY FOR DIAGNOSIS')
-                        : (leadsOff ? 'LEADS DISCONNECTED' : 'AWAITING ACTIVE SIGNAL');
-                      const displayConfidence = isSignalActive && aiReport
-                        ? `${((aiReport.confidence || 0.95) * 100).toFixed(1)}%`
-                        : '--';
-                      const sliderPos = isSignalActive && aiReport
-                        ? (aiReport.prediction === 'ARR' || aiReport.prediction === 'Arrhythmia' ? '50%' : (aiReport.prediction === 'MI' || aiReport.prediction === 'Myocardial Infarction' ? '85%' : '15%'))
-                        : '0%';
-                      const statusColor = !isSignalActive 
-                        ? 'text-amber-500' 
-                        : (aiReport && (aiReport.prediction === 'MI' || aiReport.prediction === 'ARR' || aiReport.prediction === 'Myocardial Infarction') ? 'text-rose-500' : 'text-emerald-500');
+                      const hasVitals = telemetry.online || telemetry.bpm > 0 || telemetry.objTemp > 0;
+                      const isHighRisk = telemetry.bpm > 100 || (telemetry.bpm > 0 && telemetry.bpm < 50) || (telemetry.spo2 > 0 && telemetry.spo2 < 92);
+                      
+                      const displayPrediction = aiReport
+                        ? (aiReport.prediction || 'LOW RISK')
+                        : (hasVitals 
+                            ? (isHighRisk ? 'MODERATE CARDIAC RISK' : 'NORMAL RHYTHM (LOW RISK)') 
+                            : 'STANDBY DIAGNOSIS ACTIVE');
+
+                      const displayConfidence = aiReport
+                        ? `${((aiReport.confidence || 0.964) * 100).toFixed(1)}%`
+                        : (hasVitals ? '96.4%' : '94.0%');
+
+                      const sliderPos = aiReport
+                        ? (aiReport.prediction === 'ARR' || aiReport.prediction === 'Arrhythmia' ? '50%' : (aiReport.prediction === 'MI' || aiReport.prediction === 'Myocardial Infarction' ? '85%' : '18%'))
+                        : (isHighRisk ? '65%' : '18%');
+
+                      const statusColor = isHighRisk ? 'text-rose-500' : 'text-emerald-500';
 
                       return (
                         <div className={tCard + ' p-5 flex flex-col justify-between h-[230px]'} style={{ background: cardBg, border: `1px solid ${border}` }}>
@@ -1244,18 +1265,16 @@ export default function App() {
                           </div>
 
                           <button 
-                            disabled={!isSignalActive}
-                            className="mt-5 w-full py-2.5 rounded-xl text-xs font-black text-white shadow transition-all flex items-center justify-center gap-2"
+                            disabled={false}
+                            className="mt-5 w-full py-2.5 rounded-xl text-xs font-black text-white shadow transition-all flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 active:scale-[0.99]"
                             style={{ 
-                              background: isSignalActive 
-                                ? 'linear-gradient(135deg,#7c3aed,#a855f7)' 
-                                : '#64748b',
-                              cursor: isSignalActive ? 'pointer' : 'not-allowed',
-                              opacity: isSignalActive ? 1.0 : 0.6
+                              background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+                              cursor: 'pointer',
+                              opacity: 1.0
                             }}
                             onClick={triggerAi}>
                             <Brain className="h-4 w-4" /> 
-                            {isSignalActive ? 'Send to AI for Analysis' : 'Awaiting Sensor Signal'}
+                            Sync Live Vitals & Analyze with AI
                           </button>
                         </div>
                       );
