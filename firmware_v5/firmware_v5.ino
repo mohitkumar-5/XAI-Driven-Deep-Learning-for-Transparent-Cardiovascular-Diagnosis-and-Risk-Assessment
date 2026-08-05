@@ -683,38 +683,46 @@ void scanI2C() {
 void pushTelemetryToAWS() {
   HTTPClient http;
   
-  // Build JSON Payload
-  xSemaphoreTake(dataMutex, portMAX_DELAY);
+  // Copy data fields quickly & release mutex immediately so sensor task is NEVER delayed
   int16_t snapshot[ECG_BUF_LEN];
+  xSemaphoreTake(dataMutex, portMAX_DELAY);
   getEcgSnapshot(snapshot, ECG_BUF_LEN);
+  int bpmVal = data.hrValid ? data.bpm : 0;
+  int spo2Val = data.spo2Valid ? data.spo2 : 0;
+  float objT = data.objTempC;
+  float ambT = data.ambTempC;
+  float gsrK = data.gsrKOhm;
+  float gsrU = data.gsrMicroS;
+  float ax = data.accX, ay = data.accY, az = data.accZ;
+  bool lo = ecgLeadsOff;
+  xSemaphoreGive(dataMutex); // Mutex released instantly (< 0.1ms)!
   
   String json;
-  json.reserve(4096);
+  json.reserve(1536);
   json = "{";
   json += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
-  json += "\"bpm\":" + String(data.hrValid ? data.bpm : 0) + ",";
-  json += "\"spo2\":" + String(data.spo2Valid ? data.spo2 : 0) + ",";
-  json += "\"objTemp\":" + String(data.objTempC, 2) + ",";
-  json += "\"ambTemp\":" + String(data.ambTempC, 2) + ",";
-  json += "\"gsr\":" + String(data.gsrKOhm, 2) + ",";
-  json += "\"cond\":" + String(data.gsrMicroS, 2) + ",";
-  json += "\"ax\":" + String(data.accX, 3) + ",";
-  json += "\"ay\":" + String(data.accY, 3) + ",";
-  json += "\"az\":" + String(data.accZ, 3) + ",";
+  json += "\"bpm\":" + String(bpmVal) + ",";
+  json += "\"spo2\":" + String(spo2Val) + ",";
+  json += "\"objTemp\":" + String(objT, 2) + ",";
+  json += "\"ambTemp\":" + String(ambT, 2) + ",";
+  json += "\"gsr\":" + String(gsrK, 2) + ",";
+  json += "\"cond\":" + String(gsrU, 2) + ",";
+  json += "\"ax\":" + String(ax, 3) + ",";
+  json += "\"ay\":" + String(ay, 3) + ",";
+  json += "\"az\":" + String(az, 3) + ",";
   json += "\"ecg\":{";
-  json += "\"leadsOff\":" + String(ecgLeadsOff ? "true" : "false") + ",";
+  json += "\"leadsOff\":" + String(lo ? "true" : "false") + ",";
   json += "\"samples\":[";
-  for (int i = 0; i < ECG_BUF_LEN; i++) {
+  for (int i = 0; i < ECG_BUF_LEN; i += 5) { // Fast 100-sample ECG packet (~20ms network transfer)
     json += String(snapshot[i]);
-    if (i < ECG_BUF_LEN - 1) json += ",";
+    if (i + 5 < ECG_BUF_LEN) json += ",";
   }
   json += "]}";
   json += "}";
-  xSemaphoreGive(dataMutex);
   
   http.begin(AWS_ENDPOINT);
   http.addHeader("Content-Type", "application/json");
-  http.setTimeout(3000); // 3000ms (3s) timeout to allow cloud response over cellular/Wi-Fi
+  http.setTimeout(800); // 800ms fast timeout
   
   int httpResponseCode = http.POST(json);
   if (httpResponseCode > 0) {

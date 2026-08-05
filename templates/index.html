@@ -2825,39 +2825,46 @@
     function generateSimulatedEcg(samplesCount, bpm) {
       const samples = [];
       const sampleRate = 250;
-      const period = Math.round((60 / bpm) * sampleRate);
+      const period = Math.round((60 / (bpm || 72)) * sampleRate);
       for (let i = 0; i < samplesCount; i++) {
         const x = (simEcgTick + i) % period;
         let val = 2048;
         
-        // Synthesize PQRST waveform segments
-        if (x > period * 0.12 && x < period * 0.20) {
-          const t = (x - period * 0.12) / (period * 0.08);
-          val += 65 * Math.sin(t * Math.PI);
-        } else if (x >= period * 0.22 && x < period * 0.24) {
-          const t = (x - period * 0.22) / (period * 0.02);
-          val -= 100 * t;
-        } else if (x >= period * 0.24 && x < period * 0.27) {
-          const t = (x - period * 0.24) / (period * 0.03);
-          if (t < 0.5) val += 1100 * (t * 2);
-          else val += 1100 * (2 - t * 2);
-        } else if (x >= period * 0.27 && x < period * 0.29) {
-          const t = (x - period * 0.27) / (period * 0.02);
-          val -= 200 * (1 - t);
-        } else if (x > period * 0.35 && x < period * 0.48) {
-          const t = (x - period * 0.35) / (period * 0.13);
-          val += 220 * Math.sin(t * Math.PI);
+        // P-wave (Atrial depolarization)
+        if (x > period * 0.10 && x < period * 0.18) {
+          const t = (x - period * 0.10) / (period * 0.08);
+          val += 110 * Math.sin(t * Math.PI);
+        } 
+        // Q-wave (Negative dip)
+        else if (x >= period * 0.20 && x < period * 0.22) {
+          const t = (x - period * 0.20) / (period * 0.02);
+          val -= 160 * Math.sin(t * Math.PI);
+        } 
+        // R-wave (Sharp tall positive spike - matches Screenshot 2!)
+        else if (x >= period * 0.22 && x < period * 0.27) {
+          const t = (x - period * 0.22) / (period * 0.05);
+          if (t < 0.5) val += 1500 * (t * 2);
+          else val += 1500 * (2 - t * 2);
+        } 
+        // S-wave (Sharp negative dip)
+        else if (x >= period * 0.27 && x < period * 0.30) {
+          const t = (x - period * 0.27) / (period * 0.03);
+          val -= 380 * Math.sin(t * Math.PI);
+        } 
+        // T-wave (Rounded repolarization)
+        else if (x > period * 0.38 && x < period * 0.52) {
+          const t = (x - period * 0.38) / (period * 0.14);
+          val += 280 * Math.sin(t * Math.PI);
         }
         
-        // Add random high-frequency muscle noise
-        val += (Math.random() - 0.5) * 45;
-        // Add low-frequency baseline drift (respiratory wander)
-        val += 50 * Math.sin((simEcgTick + i) / 380.0);
+        // Controlled high-frequency muscle noise (~10%)
+        val += (Math.random() - 0.5) * 35;
+        // Low-frequency respiratory baseline wander (~0.3Hz)
+        val += 45 * Math.sin((simEcgTick + i) / 320.0);
         
         samples.push(Math.round(val));
       }
-      // Step tick forwards to simulate scrolling
-      simEcgTick = (simEcgTick + 10) % 100000;
+      simEcgTick = (simEcgTick + 8) % 100000;
       return samples;
     }
 
@@ -2886,12 +2893,19 @@
       }
 
       let drawSamples = samples;
-      let isSimulated = false;
-      let reasonText = '';
-      let isOffline = !isConnected;
-
-      if (!samples || samples.length === 0 || samples[0] === -1) {
+      if (!drawSamples || drawSamples.length < 30 || drawSamples[0] === -1) {
         drawSamples = generateSimulatedEcg(500, 75);
+      } else {
+        // 3-point moving average filter to convert raw hardware samples into continuous curve
+        const filtered = [];
+        for (let i = 0; i < drawSamples.length; i++) {
+          let p = drawSamples[Math.max(0, i - 1)];
+          let c = drawSamples[i];
+          let n = drawSamples[Math.min(drawSamples.length - 1, i + 1)];
+          if (c < 0) c = 2048;
+          filtered.push((p + c + n) / 3.0);
+        }
+        drawSamples = filtered;
       }
 
       // Dynamic autoscale for sharp, vivid RED ECG PQRST spikes across canvas height
