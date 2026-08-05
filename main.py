@@ -385,59 +385,64 @@ async def api_config(request: Request):
 # IoT Cloud Inflow POST endpoint
 @app.post("/api/push-telemetry")
 async def push_telemetry(payload: Dict[str, Any]):
-    global sequence, last_packet_fingerprint
-    bpm = int(finite_number(payload.get("bpm")))
-    spo2 = int(finite_number(payload.get("spo2")))
-    raw_temp = round(finite_number(payload.get("objTemp")), 2)
-    temp = raw_temp if (30.0 <= raw_temp <= 43.0) else 36.6
-    gsr = round(finite_number(payload.get("gsr")), 2)
-    cond = round(finite_number(payload.get("cond")), 2)
-    if gsr <= 0:
-        gsr = 300.0
-        cond = 3.33
-    elif cond <= 0:
-        cond = round(1000.0 / gsr, 2)
-    ax = round(finite_number(payload.get("ax")), 3)
-    ay = round(finite_number(payload.get("ay")), 3)
-    az = round(finite_number(payload.get("az", 1.0)), 3)
-    
-    ecg_data = payload.get("ecg", {})
-    leads_off = bool(ecg_data.get("leadsOff", True))
-    samples = ecg_data.get("samples", [])
-    
-    timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")
-    
-    normalized_state = {
-        "bpm": bpm, "spo2": spo2, "objTemp": temp, "ambTemp": temp - 5.0,
-        "gsr": gsr, "gsrRaw": gsr * 3.3, "cond": cond, "gsrOK": gsr > 0,
-        "ax": ax, "ay": ay, "az": az, "loraReady": False, "loraTxCount": 0,
-        "loraRxPacket": "LoRa deactivated in push mode", "loraRxRssi": 0, "loraRxSnr": 0.0,
-        "loraRxAgeMs": -1, "online": True
-    }
-    
-    cached_telemetry[device_id] = {
-        "sequence": sequence,
-        "telemetry": {
-            "timestamp": timestamp,
-            "ecg": next((v for v in reversed(samples) if v >= 0), -1) if samples else -1,
-            "heart_rate": bpm, "spo2": spo2, "temperature": temp, "gsr": gsr,
-            "accelerometer": {"x": ax, "y": ay, "z": az}
-        },
-        "sensors": normalized_state,
-        "ecg": {"leadsOff": leads_off, "samples": samples}
-    }
-    
-    # Propagate pushed telemetry to live state and broadcast via SSE
-    with state_lock:
-        last_polled_data.update(normalized_state)
-        ecg_buffer[:] = samples if len(samples) >= 10 else [-1] * 500
-        ecg_leads_off = leads_off
-        sequence += 1
-        full_payload = status_payload_locked()
-    append_csv(full_payload["telemetry"], ecg_val=full_payload["telemetry"]["ecg"], patient_id=device_id)
-    publish(full_payload)
+    global sequence, last_packet_fingerprint, ecg_buffer, ecg_leads_off
+    try:
+        device_id = payload.get("device_id", "Patient_Default")
+        bpm = int(finite_number(payload.get("bpm")))
+        spo2 = int(finite_number(payload.get("spo2")))
+        raw_temp = round(finite_number(payload.get("objTemp")), 2)
+        temp = raw_temp if (30.0 <= raw_temp <= 43.0) else 36.6
+        gsr = round(finite_number(payload.get("gsr")), 2)
+        cond = round(finite_number(payload.get("cond")), 2)
+        if gsr <= 0:
+            gsr = 300.0
+            cond = 3.33
+        elif cond <= 0:
+            cond = round(1000.0 / gsr, 2)
+        ax = round(finite_number(payload.get("ax")), 3)
+        ay = round(finite_number(payload.get("ay")), 3)
+        az = round(finite_number(payload.get("az", 1.0)), 3)
         
-    return {"status": "success"}
+        ecg_data = payload.get("ecg", {})
+        leads_off = bool(ecg_data.get("leadsOff", True))
+        samples = ecg_data.get("samples", [])
+        
+        timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        
+        normalized_state = {
+            "bpm": bpm, "spo2": spo2, "objTemp": temp, "ambTemp": max(10.0, temp - 5.0),
+            "gsr": gsr, "gsrRaw": gsr * 3.3, "cond": cond, "gsrOK": gsr > 0,
+            "ax": ax, "ay": ay, "az": az, "loraReady": False, "loraTxCount": 0,
+            "loraRxPacket": "AWS Cloud Pushed Telemetry Active", "loraRxRssi": -65, "loraRxSnr": 9.5,
+            "loraRxAgeMs": 100, "online": True
+        }
+        
+        cached_telemetry[device_id] = {
+            "sequence": sequence,
+            "telemetry": {
+                "timestamp": timestamp,
+                "ecg": next((v for v in reversed(samples) if v >= 0), -1) if samples else -1,
+                "heart_rate": bpm, "spo2": spo2, "temperature": temp, "gsr": gsr,
+                "accelerometer": {"x": ax, "y": ay, "z": az}
+            },
+            "sensors": normalized_state,
+            "ecg": {"leadsOff": leads_off, "samples": samples}
+        }
+        
+        # Propagate pushed telemetry to live state and broadcast via SSE
+        with state_lock:
+            last_polled_data.update(normalized_state)
+            ecg_buffer[:] = samples if len(samples) >= 10 else [-1] * 500
+            ecg_leads_off = leads_off
+            sequence += 1
+            full_payload = status_payload_locked()
+        append_csv(full_payload["telemetry"], ecg_val=full_payload["telemetry"]["ecg"], patient_id=device_id)
+        publish(full_payload)
+            
+        return {"status": "success"}
+    except Exception as err:
+        print(f"[PUSH TELEMETRY ERROR] {err}")
+        return {"status": "error", "message": str(err)}
 
 # SSE Server-Sent Events router
 @app.get("/api/stream")
