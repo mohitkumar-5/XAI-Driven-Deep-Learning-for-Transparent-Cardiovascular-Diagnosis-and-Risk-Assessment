@@ -264,26 +264,17 @@ def esp32_polling_thread():
                         obj_temp = current_sim_temp
                         amb_temp = 26.5
 
-                        # Smooth and scale GSR to damp floating pin fluctuations
+                        # Preserve raw dynamic GSR resistance and conductance from hardware sensor
                         raw_gsr = round(finite_number(d.get("gsr")), 2)
+                        raw_cond = round(finite_number(d.get("cond")), 2)
                         bpm_raw = int(finite_number(d.get("bpm")))
                         
-                        # Use heavy smoothing when not worn (bpm == 0) to prevent ghost fluctuations
-                        alpha = 0.15 if bpm_raw > 0 else 0.01
-                        smoothed_gsr = round(smoothed_gsr + alpha * (raw_gsr - smoothed_gsr), 2)
-                        
-                        if 5.0 < smoothed_gsr < 300.0:
-                            baseline = 75.0
-                            diff = smoothed_gsr - baseline
-                            # Amplify deviations by 3.5x for responsive feedback
-                            gsr_val = round(baseline + diff * 3.5, 2)
-                            gsr_val = max(10.0, min(250.0, gsr_val))
-                            # Add only a very tiny decimal jitter (0.01 - 0.02)
-                            gsr_val = round(gsr_val + random.uniform(-0.02, 0.02), 2)
-                            cond_val = round(1000.0 / gsr_val, 2)
+                        if raw_gsr > 5.0 and raw_gsr < 1000.0:
+                            gsr_val = raw_gsr
+                            cond_val = raw_cond if raw_cond > 0.0 else round(1000.0 / gsr_val, 2)
                         else:
-                            gsr_val = smoothed_gsr
-                            cond_val = round(1000.0 / gsr_val, 2) if gsr_val > 0.0 else 0.0
+                            gsr_val = 300.0
+                            cond_val = 3.33
 
                         # Create realistic fallbacks for LoRa telemetry stream (avoiding dead 0 readings)
                         tx_cnt = int(finite_number(d.get("loraTxCount", 12)))
@@ -395,12 +386,17 @@ async def api_config(request: Request):
 @app.post("/api/push-telemetry")
 async def push_telemetry(payload: Dict[str, Any]):
     global sequence, last_packet_fingerprint
-    device_id = payload.get("device_id", "Patient_Default")
-    
+    bpm = int(finite_number(payload.get("bpm")))
+    spo2 = int(finite_number(payload.get("spo2")))
     raw_temp = round(finite_number(payload.get("objTemp")), 2)
     temp = raw_temp if (30.0 <= raw_temp <= 43.0) else 36.6
     gsr = round(finite_number(payload.get("gsr")), 2)
     cond = round(finite_number(payload.get("cond")), 2)
+    if gsr <= 0:
+        gsr = 300.0
+        cond = 3.33
+    elif cond <= 0:
+        cond = round(1000.0 / gsr, 2)
     ax = round(finite_number(payload.get("ax")), 3)
     ay = round(finite_number(payload.get("ay")), 3)
     az = round(finite_number(payload.get("az", 1.0)), 3)

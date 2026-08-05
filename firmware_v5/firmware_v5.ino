@@ -32,7 +32,7 @@ const char* WIFI_SSID = "vivo";
 const char* WIFI_PASS = "12345678";
 
 // AWS Push Configuration & FreeRTOS Mutex
-const char* AWS_ENDPOINT = "http://13.234.33.250/api/push-telemetry";
+const char* AWS_ENDPOINT = "http://13.235.48.212:8000/api/push-telemetry";
 const char* DEVICE_ID = "Patient_Default";
 SemaphoreHandle_t dataMutex;
 
@@ -749,7 +749,7 @@ void taskNetworkCode(void * pvParameters) {
   
   unsigned long lastLoraSend = 0;
   unsigned long lastAwsPush = 0;
-  const unsigned long AWS_PUSH_INTERVAL = 300000; // Push every 5 minutes to prevent blocking local HTTP requests
+  const unsigned long AWS_PUSH_INTERVAL = 2000; // Real-time push every 2 seconds to AWS backend
   
   for(;;) {
     server.handleClient();
