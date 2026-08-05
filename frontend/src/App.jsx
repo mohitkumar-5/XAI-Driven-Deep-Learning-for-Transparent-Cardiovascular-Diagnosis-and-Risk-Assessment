@@ -1218,7 +1218,6 @@ export default function App() {
                         <div><span className="text-[9px] font-bold block" style={{ color: muted }}>Z</span><strong className="text-xs font-black">{telemetry.az !== undefined ? telemetry.az.toFixed(2) : '--'}</strong></div>
                       </div>
                     </div>
-                  </div>
 
                     {/* AI Assessment */}
                     {(() => {
