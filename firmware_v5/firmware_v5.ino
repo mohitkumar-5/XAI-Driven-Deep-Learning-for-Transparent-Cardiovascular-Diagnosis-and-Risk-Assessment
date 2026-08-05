@@ -665,7 +665,9 @@ void pushTelemetryToAWS() {
   int16_t snapshot[ECG_BUF_LEN];
   getEcgSnapshot(snapshot, ECG_BUF_LEN);
   
-  String json = "{";
+  String json;
+  json.reserve(4096);
+  json = "{";
   json += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
   json += "\"bpm\":" + String(data.hrValid ? data.bpm : 0) + ",";
   json += "\"spo2\":" + String(data.spo2Valid ? data.spo2 : 0) + ",";
@@ -689,11 +691,12 @@ void pushTelemetryToAWS() {
   
   http.begin(AWS_ENDPOINT);
   http.addHeader("Content-Type", "application/json");
-  http.setTimeout(200); // 200ms max timeout so local server requests are never delayed
+  http.setTimeout(3000); // 3000ms (3s) timeout to allow cloud response over cellular/Wi-Fi
   
   int httpResponseCode = http.POST(json);
   if (httpResponseCode > 0) {
-    // Serial.println("AWS Push success");
+    Serial.print("AWS Push success: Code ");
+    Serial.println(httpResponseCode);
   } else {
     Serial.print("AWS Push fail: ");
     Serial.println(http.errorToString(httpResponseCode).c_str());

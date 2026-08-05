@@ -427,16 +427,15 @@ async def push_telemetry(payload: Dict[str, Any]):
         "ecg": {"leadsOff": leads_off, "samples": samples}
     }
     
-    # If the active monitored device matches this ID and we are in Cloud Inflow mode, propagate updates
-    if inflow_mode == "cloud":
-        with state_lock:
-            last_polled_data.update(normalized_state)
-            ecg_buffer[:] = samples if len(samples) >= 10 else [-1] * 500
-            ecg_leads_off = leads_off
-            sequence += 1
-            full_payload = status_payload_locked()
-        append_csv(full_payload["telemetry"], ecg_val=full_payload["telemetry"]["ecg"], patient_id=device_id)
-        publish(full_payload)
+    # Propagate pushed telemetry to live state and broadcast via SSE
+    with state_lock:
+        last_polled_data.update(normalized_state)
+        ecg_buffer[:] = samples if len(samples) >= 10 else [-1] * 500
+        ecg_leads_off = leads_off
+        sequence += 1
+        full_payload = status_payload_locked()
+    append_csv(full_payload["telemetry"], ecg_val=full_payload["telemetry"]["ecg"], patient_id=device_id)
+    publish(full_payload)
         
     return {"status": "success"}
 
