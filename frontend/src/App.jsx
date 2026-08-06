@@ -93,9 +93,10 @@ export default function App() {
     gsr: 0.0, gsrRaw: 0, cond: 0.0, gsrOK: false,
     ax: 0.0, ay: 0.0, az: 0.0,
     loraReady: false, loraTxCount: 0,
-    loraRxPacket: 'No packets yet', loraRxRssi: 0, loraRxSnr: 0.0, loraRxAgeMs: -1
+    loraRxPacket: 'No hardware connected', loraRxRssi: 0, loraRxSnr: 0.0, loraRxAgeMs: -1,
+    online: false
   });
-  const [leadsOff, setLeadsOff] = useState(false);
+  const [leadsOff, setLeadsOff] = useState(true);
   const [ecgSamples, setEcgSamples] = useState([]);
 
   /* companion */
@@ -106,8 +107,8 @@ export default function App() {
   const [compAmbTemp, setCompAmbTemp] = useState(0);
   const [compAx, setCompAx] = useState(0.0);
   const [compAy, setCompAy] = useState(0.0);
-  const [compAz, setCompAz] = useState(1.0);
-  const [compLoraRssi, setCompLoraRssi] = useState(-80);
+  const [compAz, setCompAz] = useState(0.0);
+  const [compLoraRssi, setCompLoraRssi] = useState(0);
   const [compDeviceId, setCompDeviceId] = useState('Patient_Default');
   const [chatMessages, setChatMessages] = useState([
     { sender: 'assistant', text: 'Hello! I am your AI Health Companion. I can analyze your vitals, explain your ECG patterns, and answer clinical questions. Use the form on the left or ask me anything!' }
@@ -155,7 +156,20 @@ export default function App() {
         const d = JSON.parse(e.data);
         if (d.heartbeat) return;
         const sensorData = d.sensors || d;
-        setTelemetry(prev => ({ ...prev, ...sensorData }));
+        if (sensorData && typeof sensorData === 'object') {
+          if (sensorData.online === false) {
+            setTelemetry({
+              bpm: 0, spo2: 0, objTemp: 0.0, ambTemp: 0.0,
+              gsr: 0.0, gsrRaw: 0, cond: 0.0, gsrOK: false,
+              ax: 0.0, ay: 0.0, az: 0.0,
+              loraReady: false, loraTxCount: 0,
+              loraRxPacket: 'No hardware connected', loraRxRssi: 0, loraRxSnr: 0.0, loraRxAgeMs: -1,
+              online: false
+            });
+          } else {
+            setTelemetry(prev => ({ ...prev, ...sensorData }));
+          }
+        }
         if (d.ecg) {
           setLeadsOff(d.ecg.leadsOff);
           if (d.ecg.samples) setEcgSamples(d.ecg.samples);
@@ -170,120 +184,110 @@ export default function App() {
 
   /* -- ECG canvas -- */
   useEffect(() => {
-    const draw = (canvas, samples, lo) => {
+    const draw = (canvas, samples, lo, online) => {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
       canvas.width = w; canvas.height = h;
-      ctx.fillStyle = dark ? '#060a12' : '#fff5f5';
-      ctx.fillRect(0, 0, w, h);
-      // 1. Dark Hardware Screen Background (#050002)
-      ctx.fillStyle = '#050002';
+
+      // 1. Sleek Medical Charcoal Background (#090e17)
+      ctx.fillStyle = '#090e17';
       ctx.fillRect(0, 0, w, h);
 
-      // 2. Fine Red Sub-Grid Lines (6px spacing matching photo!)
-      ctx.strokeStyle = 'rgba(255, 25, 40, 0.28)';
+      // 2. High-Contrast Grid Lines
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.18)';
       ctx.lineWidth = 0.5;
-      for (let x = 0; x <= w; x += 6) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y <= h; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      for (let x = 0; x <= w; x += 10) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y <= h; y += 10) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
-      // 3. Major Red Grid Lines (30px spacing matching photo!)
-      ctx.strokeStyle = 'rgba(255, 35, 55, 0.65)';
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.40)';
       ctx.lineWidth = 1.0;
-      for (let x = 0; x <= w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y <= h; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      for (let x = 0; x <= w; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y <= h; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
-      // 4. Center 1s Vertical Indicator Line & Text Overlay (Matching Photo!)
-      ctx.strokeStyle = 'rgba(255, 60, 80, 0.85)';
+      // 3. Center 1s Vertical Indicator Line
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
       ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
 
-      ctx.fillStyle = '#ff2a4b';
-      ctx.font = 'bold 11px monospace';
+      // 4. Crisp High-Contrast White Text Labels (#FFFFFF)
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('RAW AD8232 ECG', 10, 16);
-      ctx.font = '10px monospace';
-      ctx.fillText('AD8232 ECG | GAIN: 1100', 10, 28);
-      ctx.fillText('HR: 68-112 BPM (IRREGULAR)', 10, 40);
+      ctx.fillText('AD8232 ECG Lead-II', 12, 18);
+      ctx.font = '10px sans-serif';
+      ctx.fillText(online ? `HR: ${telemetry.bpm > 0 ? telemetry.bpm : '--'} BPM` : 'HARDWARE DISCONNECTED', 12, 32);
 
-      ctx.fillText('1mV', 10, h / 2 - 8);
-      ctx.fillText('1s', w / 2 + 4, 14);
-      ctx.fillText('1mV', w - 32, 14);
+      ctx.fillText('1mV', 12, h / 2 - 8);
+      ctx.fillText('1s', w / 2 + 6, 16);
+      ctx.fillText('1mV', w - 36, 16);
 
-      if (lo) {
-        ctx.fillStyle = '#ff1133';
-        ctx.font = 'bold 14px monospace';
+      if (!online) {
+        // High-Contrast White Banner for Disconnected Hardware
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillRect(w / 2 - 160, h / 2 - 25, 320, 50);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(w / 2 - 160, h / 2 - 25, 320, 50);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('⚠️ AD8232 LEADS OFF / DISCONNECTED', w / 2, h / 2);
+        ctx.fillText('⚠️ HARDWARE DISCONNECTED', w / 2, h / 2 - 4);
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillText('Connect ESP32 device to stream real-time ECG signals', w / 2, h / 2 + 14);
         return;
       }
 
-      // 5. Heavy Raw AD8232 Oscilloscope Signal Line (#ff1133)
-      ctx.shadowColor = 'rgba(255, 17, 51, 0.85)';
-      ctx.shadowBlur = 4;
-      ctx.strokeStyle = '#ff1133';
-      ctx.lineWidth = 1.2;
-      ctx.lineJoin = 'miter';
-      ctx.lineCap = 'butt';
+      if (lo) {
+        // High-Contrast White Banner for Leads Off
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillRect(w / 2 - 160, h / 2 - 25, 320, 50);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(w / 2 - 160, h / 2 - 25, 320, 50);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ AD8232 LEADS OFF', w / 2, h / 2 - 4);
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillText('Check electrode pads contact on skin', w / 2, h / 2 + 14);
+        return;
+      }
+
+      // 5. Clean Neon Green Signal Waveform (#00ff88)
+      ctx.shadowColor = 'rgba(0, 255, 136, 0.6)';
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#00ff88';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
 
-      const midY = h * 0.60;
-      const exactBeats = [
-        { rH: 0.95, subSpikes: [0.35, -0.25, 0.40], gap: 32 },
-        { rH: 0.50, subSpikes: [-0.20, 0.30], gap: 42 },
-        { rH: 0.98, subSpikes: [0.45, -0.30, 0.35], gap: 28 },
-        { rH: 0.65, subSpikes: [-0.25, 0.38], gap: 38 },
-        { rH: 0.85, subSpikes: [0.40, -0.28, 0.30], gap: 34 },
-        { rH: 0.40, subSpikes: [-0.18, 0.25], gap: 45 },
-        { rH: 0.92, subSpikes: [0.48, -0.32, 0.42], gap: 30 },
-        { rH: 0.78, subSpikes: [-0.30, 0.35], gap: 36 },
-        { rH: 0.58, subSpikes: [0.25, -0.20], gap: 40 },
-        { rH: 0.88, subSpikes: [0.42, -0.28, 0.38], gap: 31 },
-        { rH: 0.48, subSpikes: [-0.22, 0.28], gap: 44 },
-        { rH: 0.90, subSpikes: [0.46, -0.30, 0.40], gap: 29 }
-      ];
-      let cycleLen = 0;
-      for (let b of exactBeats) cycleLen += b.gap;
-      const tick = Math.floor(Date.now() / 20);
-      for (let i = 0; i < w; i++) {
-        const globalX = tick + i;
-        const xInCycle = globalX % cycleLen;
-        let accum = 0;
-        let cB = exactBeats[0];
-        let off = 0;
-        for (let bIdx = 0; bIdx < exactBeats.length; bIdx++) {
-          if (xInCycle >= accum && xInCycle < accum + exactBeats[bIdx].gap) {
-            cB = exactBeats[bIdx]; off = xInCycle - accum; break;
-          }
-          accum += exactBeats[bIdx].gap;
-        }
-        const spikeWidth = 14;
-        let pqrst = 0;
-        if (off < spikeWidth) {
-          const norm = off / spikeWidth;
-          if (norm < 0.20) pqrst = 14 * Math.sin((norm / 0.20) * Math.PI);
-          else if (norm >= 0.20 && norm < 0.60) {
-            const rT = (norm - 0.20) / 0.40;
-            const maxSpikeH = h * 0.54 * cB.rH;
-            pqrst = rT < 0.35 ? -maxSpikeH * (rT / 0.35) : -maxSpikeH * ((1.0 - rT) / 0.65);
-          }
-          else if (norm >= 0.60 && norm < 0.80) pqrst = 20 * Math.sin(((norm - 0.60) / 0.20) * Math.PI);
-          else pqrst = -16 * Math.sin(((norm - 0.80) / 0.20) * Math.PI);
-        } else {
-          const relPos = (off - spikeWidth) / (cB.gap - spikeWidth);
-          const subPhase = relPos * Math.PI * 3.0;
-          pqrst = -h * 0.20 * (cB.subSpikes[0] || 0.3) * Math.sin(subPhase);
-        }
-        const rawNoise = (Math.random() - 0.5) * 26.0;
-        const respDrift = 8.0 * Math.sin(globalX / 40.0) + 5.0 * Math.cos(globalX / 85.0);
-        const yV = midY + pqrst + rawNoise + respDrift;
-        i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i, yV);
+      if (samples && samples.length > 10 && Math.max(...samples) > 0) {
+        const step = w / samples.length;
+        const minV = Math.min(...samples), maxV = Math.max(...samples);
+        const range = (maxV - minV) || 1;
+        samples.forEach((val, idx) => {
+          const x = idx * step;
+          const norm = (val - minV) / range;
+          const y = h - 20 - norm * (h - 40);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+      } else {
+        const midY = h / 2;
+        ctx.moveTo(0, midY);
+        ctx.lineTo(w, midY);
       }
       ctx.stroke();
+      ctx.shadowBlur = 0;
     };
-    draw(dashboardCanvasRef.current, ecgSamples, leadsOff);
-    draw(monitorCanvasRef.current, ecgSamples, leadsOff);
-  }, [ecgSamples, leadsOff, dark, activePage, activeTab]);
+    draw(dashboardCanvasRef.current, ecgSamples, leadsOff, telemetry.online);
+    draw(monitorCanvasRef.current, ecgSamples, leadsOff, telemetry.online);
+  }, [ecgSamples, leadsOff, telemetry.online, dark, activePage, activeTab]);
 
   /* -- connect IP on Enter -- */
   const connectIp = async () => {
@@ -625,6 +629,10 @@ export default function App() {
 
   /* -- AI inference -- */
   const triggerAi = async () => {
+    if (!telemetry.online) {
+      alert("Hardware is disconnected! Please connect your ESP32 hardware device to execute AI Cardiac Risk Assessment.");
+      return;
+    }
     setShowAiModal(true); setAiLoading(true); setAiReport(null); setAiLoadingProgress(0);
     const stages = [
       { text: 'Fetching waveform buffer...', d: 600, p: 15 },
@@ -1262,24 +1270,31 @@ export default function App() {
 
                     {/* AI Assessment */}
                     {(() => {
-                      const hasVitals = telemetry.online || telemetry.bpm > 0 || telemetry.objTemp > 0;
-                      const isHighRisk = telemetry.bpm > 100 || (telemetry.bpm > 0 && telemetry.bpm < 50) || (telemetry.spo2 > 0 && telemetry.spo2 < 92);
+                      const isOnline = telemetry.online;
+                      const hasVitals = isOnline && (telemetry.bpm > 0 || telemetry.objTemp > 0);
+                      const isHighRisk = isOnline && (telemetry.bpm > 100 || (telemetry.bpm > 0 && telemetry.bpm < 50) || (telemetry.spo2 > 0 && telemetry.spo2 < 92));
                       
-                      const displayPrediction = aiReport
-                        ? (aiReport.prediction || 'LOW RISK')
-                        : (hasVitals 
-                            ? (isHighRisk ? 'MODERATE CARDIAC RISK' : 'NORMAL RHYTHM (LOW RISK)') 
-                            : 'STANDBY DIAGNOSIS ACTIVE');
+                      const displayPrediction = !isOnline
+                        ? 'HARDWARE DISCONNECTED'
+                        : (aiReport
+                            ? (aiReport.prediction || 'LOW RISK')
+                            : (hasVitals 
+                                ? (isHighRisk ? 'MODERATE CARDIAC RISK' : 'NORMAL RHYTHM (LOW RISK)') 
+                                : 'AWAITING HARDWARE STREAM'));
 
-                      const displayConfidence = aiReport
-                        ? `${((aiReport.confidence || 0.964) * 100).toFixed(1)}%`
-                        : (hasVitals ? '96.4%' : '94.0%');
+                      const displayConfidence = !isOnline
+                        ? 'N/A'
+                        : (aiReport
+                            ? `${((aiReport.confidence || 0.964) * 100).toFixed(1)}%`
+                            : (hasVitals ? '96.4%' : 'N/A'));
 
-                      const sliderPos = aiReport
-                        ? (aiReport.prediction === 'ARR' || aiReport.prediction === 'Arrhythmia' ? '50%' : (aiReport.prediction === 'MI' || aiReport.prediction === 'Myocardial Infarction' ? '85%' : '18%'))
-                        : (isHighRisk ? '65%' : '18%');
+                      const sliderPos = !isOnline
+                        ? '0%'
+                        : (aiReport
+                            ? (aiReport.prediction === 'ARR' || aiReport.prediction === 'Arrhythmia' ? '50%' : (aiReport.prediction === 'MI' || aiReport.prediction === 'Myocardial Infarction' ? '85%' : '18%'))
+                            : (isHighRisk ? '65%' : '18%'));
 
-                      const statusColor = isHighRisk ? 'text-rose-500' : 'text-emerald-500';
+                      const statusColor = !isOnline ? 'text-amber-500 font-bold' : (isHighRisk ? 'text-rose-500' : 'text-emerald-500');
 
                       return (
                         <div className={tCard + ' p-5 flex flex-col justify-between h-[230px]'} style={{ background: cardBg, border: `1px solid ${border}` }}>
@@ -1291,7 +1306,7 @@ export default function App() {
                               {displayPrediction}
                             </h2>
                             <p className="text-xs font-semibold mt-1" style={{ color: muted }}>
-                              Confidence: <strong>{displayConfidence}</strong>
+                              {isOnline ? <>Confidence: <strong>{displayConfidence}</strong></> : 'Connect ESP32 device to enable AI prediction'}
                             </p>
                             
                             <div className="mt-4">
@@ -1305,16 +1320,22 @@ export default function App() {
                           </div>
 
                           <button 
-                            disabled={false}
-                            className="mt-5 w-full py-2.5 rounded-xl text-xs font-black text-white shadow transition-all flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                            disabled={!telemetry.online}
+                            className={`mt-5 w-full py-2.5 rounded-xl text-xs font-black text-white shadow transition-all flex items-center justify-center gap-2 ${
+                              telemetry.online ? 'hover:opacity-90 active:scale-[0.99] cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                            }`}
                             style={{ 
-                              background: 'linear-gradient(135deg,#7c3aed,#a855f7)',
-                              cursor: 'pointer',
-                              opacity: 1.0
+                              background: telemetry.online ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : '#475569'
                             }}
-                            onClick={triggerAi}>
+                            onClick={() => {
+                              if (!telemetry.online) {
+                                alert("Hardware is disconnected! Please connect your ESP32 hardware device to execute AI Cardiac Risk Assessment.");
+                                return;
+                              }
+                              triggerAi();
+                            }}>
                             <Brain className="h-4 w-4" /> 
-                            Sync Live Vitals & Analyze with AI
+                            {telemetry.online ? 'Sync Live Vitals & Analyze with AI' : 'Connect Hardware to Enable AI Analysis'}
                           </button>
                         </div>
                       );

@@ -2684,13 +2684,16 @@
       const ctx = canvas.getContext('2d');
       const W = canvas.clientWidth;
       const H = canvas.clientHeight;
+      if (!W || !H) return;
       canvas.width = W;
       canvas.height = H;
 
-      ctx.clearRect(0, 0, W, H);
+      // 1. Sleek Charcoal Medical Background
+      ctx.fillStyle = '#090e17';
+      ctx.fillRect(0, 0, W, H);
 
-      // Red Grid backing lines
-      ctx.strokeStyle = 'rgba(255, 59, 92, 0.08)';
+      // 2. High Contrast Red Grid Lines
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.18)';
       ctx.lineWidth = 0.5;
       const stepGridX = W / 10;
       const stepGridY = H / 5;
@@ -2701,72 +2704,80 @@
         ctx.beginPath(); ctx.moveTo(0, j * stepGridY); ctx.lineTo(W, j * stepGridY); ctx.stroke();
       }
 
-      // Raw Organic Human ECG Painter (Non-identical R-peaks + dynamic sinus wander)
-      ctx.shadowColor = 'rgba(239, 68, 68, 0.85)';
+      // 3. Crisp High-Contrast White Text Overlay
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('AD8232 ECG Lead-II', 12, 18);
+      ctx.font = '10px sans-serif';
+      ctx.fillText(isConnected ? 'STREAMING ACTIVE' : 'HARDWARE DISCONNECTED', 12, 32);
+
+      ctx.fillText('1mV', 12, H / 2 - 8);
+      ctx.fillText('1s', W / 2 + 6, 16);
+      ctx.fillText('1mV', W - 36, 16);
+
+      if (!isConnected) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillRect(W / 2 - 160, H / 2 - 25, 320, 50);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(W / 2 - 160, H / 2 - 25, 320, 50);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ HARDWARE DISCONNECTED', W / 2, H / 2 - 4);
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillText('Connect ESP32 device to stream real-time ECG signals', W / 2, H / 2 + 14);
+        return;
+      }
+
+      if (leadsOff) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillRect(W / 2 - 160, H / 2 - 25, 320, 50);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(W / 2 - 160, H / 2 - 25, 320, 50);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ AD8232 LEADS OFF', W / 2, H / 2 - 4);
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillText('Check electrode pads contact on skin', W / 2, H / 2 + 14);
+        return;
+      }
+
+      // 4. Neon Green Waveform
+      ctx.shadowColor = 'rgba(0, 255, 136, 0.6)';
       ctx.shadowBlur = 6;
-      ctx.strokeStyle = '#ef4444';
+      ctx.strokeStyle = '#00ff88';
       ctx.lineWidth = 1.8;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.beginPath();
 
-      const midY = H * 0.60;
-      const basePeriod = 260; // Moderate speed (~2.5 beats across canvas)
-      const numPoints = W;
-
-      for (let i = 0; i < numPoints; i++) {
-        const globalIdx = simEcgTick + i;
-        const beatNum = Math.floor(globalIdx / basePeriod);
-        const beatScale = beatVarSeeds[beatNum % beatVarSeeds.length]; // Each R-peak has unique height!
-        const period = Math.round(basePeriod * (0.96 + 0.08 * Math.sin(beatNum * 1.7))); // Dynamic R-R interval spacing!
-
-        const x = i;
-        const t = globalIdx % period;
-        let yOffset = 0;
-
-        // P Wave (Atrial depolarization with subtle variance)
-        if (t > period * 0.08 && t < period * 0.18) {
-          const pT = (t - period * 0.08) / (period * 0.10);
-          yOffset = -12 * beatScale * Math.sin(pT * Math.PI);
-        }
-        // Q Wave (Downward dip)
-        else if (t >= period * 0.22 && t < period * 0.25) {
-          const qT = (t - period * 0.22) / (period * 0.03);
-          yOffset = 22 * beatScale * Math.sin(qT * Math.PI);
-        }
-        // R Wave (DYNAMIC R-PEAK HEIGHT: non-identical peaks!)
-        else if (t >= period * 0.25 && t < period * 0.29) {
-          const rT = (t - period * 0.25) / (period * 0.04);
-          const rHeight = 120 * beatScale; // R-peak height varies dynamically (85px to 145px)
-          if (rT < 0.5) yOffset = -rHeight * (rT * 2);
-          else yOffset = -rHeight * (2 - rT * 2);
-        }
-        // S Wave (Downward dip)
-        else if (t >= period * 0.29 && t < period * 0.32) {
-          const sT = (t - period * 0.29) / (period * 0.03);
-          yOffset = 30 * beatScale * Math.sin(sT * Math.PI);
-        }
-        // T Wave (Repolarization hump)
-        else if (t > period * 0.42 && t < period * 0.60) {
-          const tT = (t - period * 0.42) / (period * 0.18);
-          yOffset = -22 * (0.8 + 0.4 * Math.sin(beatNum)) * Math.sin(tT * Math.PI);
-        }
-
-        // Raw Muscle Noise (~7.5px) + Low-Frequency Respiratory Baseline Drift (~5.5px)
-        const rawNoise = (Math.random() - 0.5) * 7.5;
-        const respDrift = 5.5 * Math.sin(globalIdx / 110.0) + 3.0 * Math.cos(globalIdx / 220.0);
-        yOffset += rawNoise + respDrift;
-
-        const y = midY + yOffset;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      if (samples && samples.length > 10 && Math.max(...samples) > 0) {
+        const step = W / samples.length;
+        const minV = Math.min(...samples), maxV = Math.max(...samples);
+        const range = (maxV - minV) || 1;
+        samples.forEach((val, idx) => {
+          const x = idx * step;
+          const norm = (val - minV) / range;
+          const y = H - 20 - norm * (H - 40);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+      } else {
+        const midY = H / 2;
+        ctx.moveTo(0, midY);
+        ctx.lineTo(W, midY);
       }
       ctx.stroke();
-
-      // Step tick forward at moderate speed
-      simEcgTick = (simEcgTick + 2) % 100000;
-    }argeEcgCanvas', ecg.samples, false);
-      }
+      ctx.shadowBlur = 0;
+    }
 
       // HRV & RR stats
       if (bpm > 0) {

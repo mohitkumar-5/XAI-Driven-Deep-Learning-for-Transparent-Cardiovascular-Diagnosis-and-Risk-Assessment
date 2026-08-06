@@ -212,21 +212,34 @@ def esp32_polling_thread():
             time.sleep(1.0)
             continue
             
-        started = time.monotonic()
-        target_ip = ESP32_IP
-        success = False
-        
+        target_ip = ESP32_IP.strip()
+        if not target_ip:
+            with state_lock:
+                if last_polled_data.get("online", False):
+                    last_polled_data.update({
+                        "bpm": 0, "spo2": 0, "objTemp": 0.0, "ambTemp": 0.0, "gsr": 0.0, "gsrRaw": 0.0, "cond": 0.0,
+                        "gsrOK": False, "ax": 0.0, "ay": 0.0, "az": 0.0, "loraReady": False, "loraTxCount": 0,
+                        "loraRxPacket": "No hardware connected", "loraRxRssi": 0, "loraRxSnr": 0.0, "loraRxAgeMs": -1, "online": False
+                    })
+                    ecg_leads_off = True
+                    ecg_buffer = [-1] * 500
+                    sequence += 1
+                    payload = status_payload_locked()
+                    publish(payload)
+            time.sleep(1.0)
+            continue
+
         try:
             # Use httpx for persistent keep-alive HTTP connection (no TCP handshake per request)
             with httpx.Client(timeout=2.0) as client:
-                while inflow_mode == "local":
+                while inflow_mode == "local" and ESP32_IP.strip():
                     loop_start = time.monotonic()
                     try:
                         # Fast poll: /data
                         r = client.get(f"http://{target_ip}/data")
                         raw_text = r.text
                         
-                        # Sanitize loraRxPacket string by escaping double quotes (since raw radio noise can contain them and break JSON)
+                        # Sanitize loraRxPacket string by escaping double quotes
                         start_marker = '"loraRxPacket":"'
                         end_marker = '","loraRxRssi"'
                         start_idx = raw_text.find(start_marker)
@@ -251,58 +264,45 @@ def esp32_polling_thread():
                             except Exception:
                                 pass
                         
-                        # Slowly drift temperature between 36.3 °C and 37.9 °C
-                        global current_sim_temp, last_temp_update, smoothed_gsr
-                        now_t = time.monotonic()
-                        if now_t - last_temp_update >= 3.0:
-                            last_temp_update = now_t
-                            current_sim_temp = round(current_sim_temp + random.uniform(-0.15, 0.15), 2)
-                            if current_sim_temp < 36.3:
-                                current_sim_temp = 36.3
-                            elif current_sim_temp > 37.9:
-                                current_sim_temp = 37.9
-                        
-                        obj_temp = current_sim_temp
-                        amb_temp = 26.5
+                        raw_temp = round(finite_number(d.get("objTemp", d.get("temp", 0))), 2)
+                        obj_temp = raw_temp if (30.0 <= raw_temp <= 45.0) else 0.0
+                        amb_temp = round(finite_number(d.get("ambTemp", 26.5)), 2)
 
                         # Preserve raw dynamic GSR resistance and conductance from hardware sensor
                         raw_gsr = round(finite_number(d.get("gsr")), 2)
                         raw_cond = round(finite_number(d.get("cond")), 2)
                         bpm_raw = int(finite_number(d.get("bpm")))
+                        spo2_raw = int(finite_number(d.get("spo2")))
                         
                         if raw_gsr > 5.0 and raw_gsr < 1000.0:
                             gsr_val = raw_gsr
                             cond_val = raw_cond if raw_cond > 0.0 else round(1000.0 / gsr_val, 2)
                         else:
-                            gsr_val = 300.0
-                            cond_val = 3.33
+                            gsr_val = 0.0
+                            cond_val = 0.0
 
-                        # Create realistic fallbacks for LoRa telemetry stream (avoiding dead 0 readings)
-                        tx_cnt = int(finite_number(d.get("loraTxCount", 12)))
-                        bpm_pkt = bpm_raw if bpm_raw > 0 else random.randint(72, 76)
-                        spo2_pkt = int(finite_number(d.get("spo2")))
-                        spo2_pkt = spo2_pkt if spo2_pkt > 0 else random.randint(97, 99)
+                        tx_cnt = int(finite_number(d.get("loraTxCount", 0)))
                         
-                        pkt_str = f"PKT:{tx_cnt}|BPM:{bpm_pkt}|O2:{spo2_pkt}|T:{obj_temp:.1f}|GSR:{gsr_val:.1f}|A:{round(finite_number(d.get('ax')), 1)},{round(finite_number(d.get('ay')), 1)},{round(finite_number(d.get('az', 1.0)), 1)}"
+                        pkt_str = d.get("loraRxPacket") or f"PKT:{tx_cnt}|BPM:{bpm_raw}|O2:{spo2_raw}|T:{obj_temp:.1f}|GSR:{gsr_val:.1f}"
 
                         normalized = {
                             "bpm": bpm_raw, 
-                            "spo2": int(finite_number(d.get("spo2"))),
+                            "spo2": spo2_raw,
                             "objTemp": obj_temp, 
                             "ambTemp": amb_temp,
                             "gsr": gsr_val, 
                             "gsrRaw": round(finite_number(d.get("gsrRaw", 0)), 2),
                             "cond": cond_val, 
-                            "gsrOK": bool(d.get("gsrOK", False)),
+                            "gsrOK": bool(d.get("gsrOK", gsr_val > 0)),
                             "ax": round(finite_number(d.get("ax")), 3), 
                             "ay": round(finite_number(d.get("ay")), 3), 
-                            "az": round(finite_number(d.get("az", 1.0)), 3),
+                            "az": round(finite_number(d.get("az", 0.0)), 3),
                             "loraReady": bool(d.get("loraReady", False)), 
                             "loraTxCount": tx_cnt,
-                            "loraRxPacket": str(pkt_str if not d.get("loraRxPacket") or d.get("loraRxPacket") == "No packet received yet" else d.get("loraRxPacket"))[:256],
-                            "loraRxRssi": int(random.randint(-85, -78) if d.get("loraRxRssi") == 0 else d.get("loraRxRssi")), 
-                            "loraRxSnr": round(float(random.uniform(8.5, 10.5)) if d.get("loraRxSnr") == 0.0 else float(d.get("loraRxSnr")), 1),
-                            "loraRxAgeMs": int(100 if d.get("loraRxAgeMs") == -1 else d.get("loraRxAgeMs")), 
+                            "loraRxPacket": str(pkt_str)[:256],
+                            "loraRxRssi": int(d.get("loraRxRssi", 0)), 
+                            "loraRxSnr": round(float(d.get("loraRxSnr", 0.0)), 1),
+                            "loraRxAgeMs": int(d.get("loraRxAgeMs", -1)), 
                             "online": True,
                         }
                         with state_lock:
@@ -322,18 +322,18 @@ def esp32_polling_thread():
                     except Exception as inner_err:
                         print(f"[POLL ERROR] {inner_err}")
                         consecutive_failures += 1
-                        if consecutive_failures >= 15:
-                            with state_lock:
-                                last_polled_data.update({
-                                    "bpm": 0, "spo2": 0, "objTemp": 36.6, "ambTemp": 26.5, "gsr": 0.0, "gsrRaw": 0.0, "cond": 0.0,
-                                    "gsrOK": False, "ax": 0.0, "ay": 0.0, "az": 1.0, "loraReady": False, "loraTxCount": 0,
-                                    "loraRxPacket": "No hardware connected", "loraRxRssi": 0, "loraRxSnr": 0.0, "loraRxAgeMs": -1, "online": False
-                                })
-                                ecg_leads_off = True
-                                ecg_buffer = [-1] * 500
-                                sequence += 1
-                                payload = status_payload_locked()
-                            publish(payload)
+                        with state_lock:
+                            last_polled_data.update({
+                                "bpm": 0, "spo2": 0, "objTemp": 0.0, "ambTemp": 0.0, "gsr": 0.0, "gsrRaw": 0.0, "cond": 0.0,
+                                "gsrOK": False, "ax": 0.0, "ay": 0.0, "az": 0.0, "loraReady": False, "loraTxCount": 0,
+                                "loraRxPacket": "No hardware connected", "loraRxRssi": 0, "loraRxSnr": 0.0, "loraRxAgeMs": -1, "online": False
+                            })
+                            ecg_leads_off = True
+                            ecg_buffer = [-1] * 500
+                            sequence += 1
+                            payload = status_payload_locked()
+                        publish(payload)
+                        if consecutive_failures >= 3:
                             break  # Break inner loop to recreate httpx client
                     
                     elapsed = time.monotonic() - loop_start
@@ -487,15 +487,38 @@ async def api_run_ai(request: Request):
     except Exception:
         body = {}
     
-    # Check if manual vitals are passed
-    manual_vitals = body.get("vitals") if isinstance(body, dict) else None
-    ecg_samples = body.get("ecg_samples") if isinstance(body, dict) else None
-    
+    # Check hardware connection state
+    with state_lock:
+        is_online = last_polled_data.get("online", False)
+
+    if not is_online and not manual_vitals:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Hardware is disconnected. Please connect your ESP32 hardware device to execute AI Cardiac Risk Assessment.",
+                "prediction": "Hardware Disconnected",
+                "confidence": 0.0,
+                "clinical_message": "Hardware disconnected. Connect ESP32 hardware device to enable real-time AI cardiac assessment."
+            }
+        )
+
     if manual_vitals:
-        bpm = float(manual_vitals.get("bpm", 72))
-        spo2 = float(manual_vitals.get("spo2", 98))
-        temp = float(manual_vitals.get("temp", 36.5))
-        gsr = float(manual_vitals.get("gsr", 300))
+        bpm = float(manual_vitals.get("bpm", 0))
+        spo2 = float(manual_vitals.get("spo2", 0))
+        temp = float(manual_vitals.get("temp", 0))
+        gsr = float(manual_vitals.get("gsr", 0))
+        if bpm <= 0 and spo2 <= 0 and temp <= 0:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "No valid hardware vital signs detected. Please connect hardware to perform AI Cardiac Assessment.",
+                    "prediction": "Hardware Disconnected",
+                    "confidence": 0.0,
+                    "clinical_message": "No hardware vitals available."
+                }
+            )
     else:
         with state_lock:
             bpm = last_polled_data["bpm"]
