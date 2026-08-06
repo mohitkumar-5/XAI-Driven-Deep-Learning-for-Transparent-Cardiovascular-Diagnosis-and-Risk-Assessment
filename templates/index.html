@@ -2863,20 +2863,12 @@
        ECG CANVAS PAINTER
        ════════════════════════════════════════════════════════ */
     let simEcgTick = 0;
-    // Seeded array of 12 irregular hardware beats (matching exact monitor photo!)
-    const exactHardwareBeats = [
-      { rH: 0.95, subSpikes: [0.35, -0.25, 0.40], gap: 32 },
-      { rH: 0.50, subSpikes: [-0.20, 0.30], gap: 42 },
-      { rH: 0.98, subSpikes: [0.45, -0.30, 0.35], gap: 28 },
-      { rH: 0.65, subSpikes: [-0.25, 0.38], gap: 38 },
-      { rH: 0.85, subSpikes: [0.40, -0.28, 0.30], gap: 34 },
-      { rH: 0.40, subSpikes: [-0.18, 0.25], gap: 45 },
-      { rH: 0.92, subSpikes: [0.48, -0.32, 0.42], gap: 30 },
-      { rH: 0.78, subSpikes: [-0.30, 0.35], gap: 36 },
-      { rH: 0.58, subSpikes: [0.25, -0.20], gap: 40 },
-      { rH: 0.88, subSpikes: [0.42, -0.28, 0.38], gap: 31 },
-      { rH: 0.48, subSpikes: [-0.22, 0.28], gap: 44 },
-      { rH: 0.90, subSpikes: [0.46, -0.30, 0.40], gap: 29 }
+    // Seeded array of spacious hardware beats with uneven in-between signals matching exact photo!
+    const photoSpaciousBeats = [
+      { rH: 0.92, sD: 0.45, inBetweenType: 1, gap: 215 },
+      { rH: 0.98, sD: 0.65, inBetweenType: 2, gap: 225 },
+      { rH: 0.82, sD: 0.58, inBetweenType: 3, gap: 195 },
+      { rH: 0.90, sD: 0.50, inBetweenType: 4, gap: 220 }
     ];
 
     function drawECGWaveform(canvasId, samples, leadsOff) {
@@ -2888,38 +2880,47 @@
       canvas.width = W;
       canvas.height = H;
 
-      // 1. Dark Hardware Screen Background (#050002)
-      ctx.fillStyle = '#050002';
+      // 1. Pitch Black Background (#020001)
+      ctx.fillStyle = '#020001';
       ctx.fillRect(0, 0, W, H);
 
-      // 2. Fine Red Sub-Grid Lines (6px spacing matching photo!)
-      ctx.strokeStyle = 'rgba(255, 25, 40, 0.28)';
+      // 2. Fine Red Sub-Grid Lines (8px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 30, 45, 0.25)';
       ctx.lineWidth = 0.5;
-      for (let x = 0; x <= W; x += 6) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-      for (let y = 0; y <= H; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      for (let x = 0; x <= W; x += 8) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y <= H; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-      // 3. Major Red Grid Lines (30px spacing matching photo!)
-      ctx.strokeStyle = 'rgba(255, 35, 55, 0.65)';
+      // 3. Major Red Grid Lines (40px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 40, 60, 0.65)';
       ctx.lineWidth = 1.0;
-      for (let x = 0; x <= W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-      for (let y = 0; y <= H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      for (let x = 0; x <= W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y <= H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-      // 4. Center 1s Vertical Indicator Line & Text Overlay (Matching Photo!)
-      ctx.strokeStyle = 'rgba(255, 60, 80, 0.85)';
+      // 4. Center Vertical RULER Calibration Axis Line (Photo Match!)
+      const centerX = W / 2;
+      ctx.strokeStyle = '#ff2a4b';
       ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, H); ctx.stroke();
 
-      ctx.fillStyle = '#ff2a4b';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('RAW AD8232 ECG', 10, 16);
+      ctx.strokeStyle = '#ff2a4b';
+      ctx.lineWidth = 1.0;
+      ctx.fillStyle = '#ff3352';
       ctx.font = '10px monospace';
-      ctx.fillText('AD8232 ECG | GAIN: 1100', 10, 28);
-      ctx.fillText('HR: 68-112 BPM (IRREGULAR)', 10, 40);
+      ctx.textAlign = 'left';
+      ctx.fillText('1s', centerX - 6, 12);
 
-      ctx.fillText('1mV', 10, H / 2 - 8);
-      ctx.fillText('1s', W / 2 + 4, 14);
-      ctx.fillText('1mV', W - 32, 14);
+      for (let y = 30; y < H; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 4, y);
+        ctx.lineTo(centerX + 4, y);
+        ctx.stroke();
+        
+        if (y === 30 || y === 60 || y === 120 || y === 150 || y === 180 || y === 240) {
+          ctx.fillText('1mV', centerX + 6, y + 3);
+        } else if (y === 90) {
+          ctx.fillText('1s', centerX + 6, y + 3);
+        }
+      }
 
       if (leadsOff) {
         ctx.fillStyle = '#ff1133';
@@ -2929,64 +2930,74 @@
         return;
       }
 
-      // 5. Heavy Raw AD8232 Oscilloscope Signal Line (#ff1133)
+      // 5. Raw AD8232 Oscilloscope Waveform Trace (Photo Match: 4 Tall Needle Peaks + Uneven Baseline!)
       ctx.shadowColor = 'rgba(255, 17, 51, 0.85)';
       ctx.shadowBlur = 4;
       ctx.strokeStyle = '#ff1133';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.3;
       ctx.lineJoin = 'miter';
       ctx.lineCap = 'butt';
       ctx.beginPath();
 
-      const midY = H * 0.60;
+      const midY = H * 0.58;
       const numPoints = W;
 
       let cycleLen = 0;
-      for (let b of exactHardwareBeats) cycleLen += b.gap;
+      for (let b of photoSpaciousBeats) cycleLen += b.gap;
 
       for (let i = 0; i < numPoints; i++) {
         const globalX = simEcgTick + i;
         const xInCycle = globalX % cycleLen;
 
         let accum = 0;
-        let currBeat = exactHardwareBeats[0];
+        let currBeat = photoSpaciousBeats[0];
         let offsetInBeat = 0;
 
-        for (let bIdx = 0; bIdx < exactHardwareBeats.length; bIdx++) {
-          if (xInCycle >= accum && xInCycle < accum + exactHardwareBeats[bIdx].gap) {
-            currBeat = exactHardwareBeats[bIdx];
+        for (let bIdx = 0; bIdx < photoSpaciousBeats.length; bIdx++) {
+          if (xInCycle >= accum && xInCycle < accum + photoSpaciousBeats[bIdx].gap) {
+            currBeat = photoSpaciousBeats[bIdx];
             offsetInBeat = xInCycle - accum;
             break;
           }
-          accum += exactHardwareBeats[bIdx].gap;
+          accum += photoSpaciousBeats[bIdx].gap;
         }
 
-        const spikeWidth = 14;
+        const spikeWidth = 32;
         let pqrst = 0;
 
         if (offsetInBeat < spikeWidth) {
           const norm = offsetInBeat / spikeWidth;
           if (norm < 0.20) {
-            pqrst = 14 * Math.sin((norm / 0.20) * Math.PI);
-          } else if (norm >= 0.20 && norm < 0.60) {
-            const rT = (norm - 0.20) / 0.40;
-            const maxSpikeH = H * 0.54 * currBeat.rH;
+            pqrst = 12 * Math.sin((norm / 0.20) * Math.PI);
+          } else if (norm >= 0.20 && norm < 0.55) {
+            const rT = (norm - 0.20) / 0.35;
+            const maxSpikeH = H * 0.58 * currBeat.rH;
             if (rT < 0.35) pqrst = -maxSpikeH * (rT / 0.35);
             else pqrst = -maxSpikeH * ((1.0 - rT) / 0.65);
-          } else if (norm >= 0.60 && norm < 0.80) {
-            pqrst = 20 * Math.sin(((norm - 0.60) / 0.20) * Math.PI);
+          } else if (norm >= 0.55 && norm < 0.80) {
+            const sT = (norm - 0.55) / 0.25;
+            const maxDipH = H * 0.38 * currBeat.sD;
+            pqrst = maxDipH * Math.sin(sT * Math.PI);
           } else {
-            pqrst = -16 * Math.sin(((norm - 0.80) / 0.20) * Math.PI);
+            pqrst = -18 * Math.sin(((norm - 0.80) / 0.20) * Math.PI);
           }
         } else {
-          const relPos = (offsetInBeat - spikeWidth) / (currBeat.gap - spikeWidth);
-          const subPhase = relPos * Math.PI * 3.0;
-          pqrst = -H * 0.20 * (currBeat.subSpikes[0] || 0.3) * Math.sin(subPhase);
+          // Uneven, raw hardware in-between signals matching photo!
+          const norm = (offsetInBeat - spikeWidth) / (currBeat.gap - spikeWidth);
+          if (currBeat.inBetweenType === 1) {
+            pqrst = -38 * Math.sin(norm * Math.PI) + (Math.random() - 0.5) * 12.0;
+          } else if (currBeat.inBetweenType === 2) {
+            pqrst = 30 * Math.sin(norm * Math.PI) + (Math.random() - 0.5) * 14.0;
+          } else if (currBeat.inBetweenType === 3) {
+            pqrst = -28 * Math.sin(norm * Math.PI * 2.0) + (Math.random() - 0.5) * 10.0;
+          } else {
+            pqrst = -32 * Math.sin(Math.pow(norm, 0.7) * Math.PI) + (Math.random() - 0.5) * 12.0;
+          }
         }
 
-        // Heavy active noise band (+/- 26px) matching exact monitor photo!
-        const rawNoise = (Math.random() - 0.5) * 26.0;
-        const baselineDrift = 8.0 * Math.sin(globalX / 40.0) + 5.0 * Math.cos(globalX / 85.0);
+        // Heavy high-frequency electrode noise band (+/- 22px) + baseline drift (Photo Match!)
+        const rawNoise = (Math.random() - 0.5) * 22.0;
+        const baselineDrift = 7.0 * Math.sin(globalX / 55.0) + 4.0 * Math.cos(globalX / 110.0);
 
         const y = midY + pqrst + rawNoise + baselineDrift;
 
@@ -2995,7 +3006,7 @@
       }
       ctx.stroke();
 
-      simEcgTick = (simEcgTick + 3) % 100000;
+      simEcgTick = (simEcgTick + 2) % 100000;
     }
 
     }

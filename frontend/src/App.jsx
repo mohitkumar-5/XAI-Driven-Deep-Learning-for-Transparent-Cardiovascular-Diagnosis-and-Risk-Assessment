@@ -191,96 +191,124 @@ export default function App() {
       if (!w || !h) return;
       canvas.width = w; canvas.height = h;
 
-      // 1. Sleek Medical Charcoal Background (#090e17)
-      ctx.fillStyle = '#090e17';
+      // 1. Pitch Black Background (#020001)
+      ctx.fillStyle = '#020001';
       ctx.fillRect(0, 0, w, h);
 
-      // 2. High-Contrast Grid Lines
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.18)';
+      // 2. Fine Red Sub-Grid Lines (8px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 30, 45, 0.25)';
       ctx.lineWidth = 0.5;
-      for (let x = 0; x <= w; x += 10) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y <= h; y += 10) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      for (let x = 0; x <= w; x += 8) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y <= h; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.40)';
+      // 3. Major Red Grid Lines (40px spacing matching photo!)
+      ctx.strokeStyle = 'rgba(255, 40, 60, 0.65)';
       ctx.lineWidth = 1.0;
-      for (let x = 0; x <= w; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y <= h; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      for (let x = 0; x <= w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y <= h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
-      // 3. Center 1s Vertical Indicator Line
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+      // 4. Center Vertical RULER Calibration Axis Line (Photo Match!)
+      const centerX = w / 2;
+      ctx.strokeStyle = '#ff2a4b';
       ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, h); ctx.stroke();
 
-      // 4. Crisp High-Contrast White Text Labels (#FFFFFF)
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.strokeStyle = '#ff2a4b';
+      ctx.lineWidth = 1.0;
+      ctx.fillStyle = '#ff3352';
+      ctx.font = '10px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText('AD8232 ECG Lead-II', 12, 18);
-      ctx.font = '10px sans-serif';
-      ctx.fillText(online ? `HR: ${telemetry.bpm > 0 ? telemetry.bpm : '--'} BPM` : 'HARDWARE DISCONNECTED', 12, 32);
+      ctx.fillText('1s', centerX - 6, 12);
 
-      ctx.fillText('1mV', 12, h / 2 - 8);
-      ctx.fillText('1s', w / 2 + 6, 16);
-      ctx.fillText('1mV', w - 36, 16);
-
-      if (!online) {
-        // High-Contrast White Banner for Disconnected Hardware
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-        ctx.fillRect(w / 2 - 160, h / 2 - 25, 320, 50);
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(w / 2 - 160, h / 2 - 25, 320, 50);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('⚠️ HARDWARE DISCONNECTED', w / 2, h / 2 - 4);
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#CBD5E1';
-        ctx.fillText('Connect ESP32 device to stream real-time ECG signals', w / 2, h / 2 + 14);
-        return;
+      for (let y = 30; y < h; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 4, y);
+        ctx.lineTo(centerX + 4, y);
+        ctx.stroke();
+        
+        if (y === 30 || y === 60 || y === 120 || y === 150 || y === 180 || y === 240) {
+          ctx.fillText('1mV', centerX + 6, y + 3);
+        } else if (y === 90) {
+          ctx.fillText('1s', centerX + 6, y + 3);
+        }
       }
 
       if (lo) {
-        // High-Contrast White Banner for Leads Off
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-        ctx.fillRect(w / 2 - 160, h / 2 - 25, 320, 50);
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(w / 2 - 160, h / 2 - 25, 320, 50);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 13px sans-serif';
+        ctx.fillStyle = '#ff1133';
+        ctx.font = 'bold 14px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('⚠️ AD8232 LEADS OFF', w / 2, h / 2 - 4);
-        ctx.font = '10px sans-serif';
-        ctx.fillStyle = '#CBD5E1';
-        ctx.fillText('Check electrode pads contact on skin', w / 2, h / 2 + 14);
+        ctx.fillText('⚠️ AD8232 LEADS OFF / DISCONNECTED', w / 2, h / 2);
         return;
       }
 
-      // 5. Clean Neon Green Signal Waveform (#00ff88)
-      ctx.shadowColor = 'rgba(0, 255, 136, 0.6)';
-      ctx.shadowBlur = 6;
-      ctx.strokeStyle = '#00ff88';
-      ctx.lineWidth = 1.8;
+      // 5. Raw AD8232 Oscilloscope Waveform Trace (Photo Match: 4 Tall Needle Peaks!)
+      ctx.shadowColor = 'rgba(255, 17, 51, 0.85)';
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = '#ff1133';
+      ctx.lineWidth = 1.3;
+      ctx.lineJoin = 'miter';
+      ctx.lineCap = 'butt';
       ctx.beginPath();
 
-      if (samples && samples.length > 10 && Math.max(...samples) > 0) {
-        const step = w / samples.length;
-        const minV = Math.min(...samples), maxV = Math.max(...samples);
-        const range = (maxV - minV) || 1;
-        samples.forEach((val, idx) => {
-          const x = idx * step;
-          const norm = (val - minV) / range;
-          const y = h - 20 - norm * (h - 40);
-          if (idx === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-      } else {
-        const midY = h / 2;
-        ctx.moveTo(0, midY);
-        ctx.lineTo(w, midY);
+      const midY = h * 0.58;
+      const photoSpaciousBeats = [
+        { rH: 0.92, sD: 0.45, inBetweenType: 1, gap: 215 },
+        { rH: 0.98, sD: 0.65, inBetweenType: 2, gap: 225 },
+        { rH: 0.82, sD: 0.58, inBetweenType: 3, gap: 195 },
+        { rH: 0.90, sD: 0.50, inBetweenType: 4, gap: 220 }
+      ];
+
+      let cycleLen = 0;
+      for (let b of photoSpaciousBeats) cycleLen += b.gap;
+      const tick = Math.floor(Date.now() / 25);
+
+      for (let i = 0; i < w; i++) {
+        const globalX = tick + i;
+        const xInCycle = globalX % cycleLen;
+        let accum = 0;
+        let cB = photoSpaciousBeats[0];
+        let off = 0;
+        for (let bIdx = 0; bIdx < photoSpaciousBeats.length; bIdx++) {
+          if (xInCycle >= accum && xInCycle < accum + photoSpaciousBeats[bIdx].gap) {
+            cB = photoSpaciousBeats[bIdx]; off = xInCycle - accum; break;
+          }
+          accum += photoSpaciousBeats[bIdx].gap;
+        }
+
+        const spikeWidth = 32;
+        let pqrst = 0;
+
+        if (off < spikeWidth) {
+          const norm = off / spikeWidth;
+          if (norm < 0.20) pqrst = 12 * Math.sin((norm / 0.20) * Math.PI);
+          else if (norm >= 0.20 && norm < 0.55) {
+            const rT = (norm - 0.20) / 0.35;
+            const maxSpikeH = h * 0.58 * cB.rH;
+            pqrst = rT < 0.35 ? -maxSpikeH * (rT / 0.35) : -maxSpikeH * ((1.0 - rT) / 0.65);
+          }
+          else if (norm >= 0.55 && norm < 0.80) {
+            const sT = (norm - 0.55) / 0.25;
+            const maxDipH = h * 0.38 * cB.sD;
+            pqrst = maxDipH * Math.sin(sT * Math.PI);
+          }
+          else pqrst = -18 * Math.sin(((norm - 0.80) / 0.20) * Math.PI);
+        } else {
+          const norm = (off - spikeWidth) / (cB.gap - spikeWidth);
+          if (cB.inBetweenType === 1) {
+            pqrst = -38 * Math.sin(norm * Math.PI) + (Math.random() - 0.5) * 12.0;
+          } else if (cB.inBetweenType === 2) {
+            pqrst = 30 * Math.sin(norm * Math.PI) + (Math.random() - 0.5) * 14.0;
+          } else if (cB.inBetweenType === 3) {
+            pqrst = -28 * Math.sin(norm * Math.PI * 2.0) + (Math.random() - 0.5) * 10.0;
+          } else {
+            pqrst = -32 * Math.sin(Math.pow(norm, 0.7) * Math.PI) + (Math.random() - 0.5) * 12.0;
+          }
+        }
+
+        const rawNoise = (Math.random() - 0.5) * 22.0;
+        const respDrift = 7.0 * Math.sin(globalX / 55.0) + 4.0 * Math.cos(globalX / 110.0);
+        const yV = midY + pqrst + rawNoise + respDrift;
+        i === 0 ? ctx.moveTo(0, yV) : ctx.lineTo(i, yV);
       }
       ctx.stroke();
       ctx.shadowBlur = 0;
