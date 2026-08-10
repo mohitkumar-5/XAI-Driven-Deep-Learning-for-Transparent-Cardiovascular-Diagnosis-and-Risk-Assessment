@@ -1,4 +1,6 @@
-# GitHub Linguist Overrides - Mark frontend build files & static assets as vendored
-frontend/dist/* linguist-vendored
-static/* linguist-vendored
-templates/* linguist-detectable=false
+# GitHub Linguist Overrides - Exclude frontend & web assets from language stats
+frontend/** linguist-vendored
+frontend/** linguist-detectable=false
+static/** linguist-vendored
+static/** linguist-detectable=false
+templates/** linguist-detectable=false
