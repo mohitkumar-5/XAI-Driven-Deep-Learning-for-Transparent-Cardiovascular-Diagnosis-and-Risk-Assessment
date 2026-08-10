@@ -1,4 +1,4 @@
-# 🫀 DEEPCARDI - XAI Driven Deep Learning for Transparent Cardiovascular Diagnosis and Risk Assessment — IoT
+# 🫀 DEEPCARDIO - XAI Driven Deep Learning for Transparent Cardiovascular Diagnosis and Risk Assessment — IoT
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
