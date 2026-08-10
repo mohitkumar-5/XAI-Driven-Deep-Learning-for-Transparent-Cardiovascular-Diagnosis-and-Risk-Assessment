@@ -1,10 +1,10 @@
-# 🫀 DeepCardio-XAI — IoT-Enabled XAI-Driven Deep Learning for Transparent Cardiovascular Diagnosis and Risk Assessment
+# 🫀 XAI-Driven Deep Learning for Transparent Cardiovascular Diagnosis and Risk Assessment — IoT
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
   <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch">
-  <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/Accuracy-88%25-brightgreen?style=for-the-badge&logo=target&logoColor=white" alt="Accuracy 88%">
   <img src="https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS EC2">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/ESP32-000000?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32">
@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <b>DeepCardio-XAI</b> is an end-to-end intelligent cardiac tele-monitoring system combining IoT wearable telemetry (LoRa + ESP32), high-accuracy deep learning (1D CNN + BiLSTM), Explainable AI (SHAP waveform attribution), and an interactive clinical web platform deployed on AWS.
+  <b>DeepCardio-XAI</b> is an end-to-end intelligent cardiac tele-monitoring system combining IoT wearable telemetry (LoRa + ESP32), high-accuracy deep learning (1D CNN + BiLSTM achieving <b>88% accuracy</b>), Explainable AI (SHAP waveform attribution), and an interactive clinical web platform deployed on AWS.
 </p>
 
 <p align="center">
@@ -26,23 +26,25 @@
 
 Cardiovascular diseases (CVDs) remain the leading cause of global mortality. Traditional clinical cardiac diagnosis relies heavily on static, in-clinic 12-lead ECG machines, which cannot capture transient arrhythmias or silent ischemic events occurring during daily activities. Furthermore, existing AI diagnostic models act as opaque "black boxes," leaving cardiologists skeptical of automated risk predictions.
 
-I built **DeepCardio-XAI** to solve these critical challenges by bridging **hardware telemetry, edge AI, and transparent clinical explainability**:
+I built **DeepCardio-XAI** to solve these critical challenges by bridging **hardware IoT telemetry, deep learning inference, and transparent clinical explainability**:
 
-1. **Continuous Remote Telemetry:** Patients wear a lightweight ESP32-powered sensor package that continuously captures single-lead ECG, blood oxygen (SpO2), skin temperature, stress levels (GSR), and movement, transmitting signals long-range via LoRa telemetry.
-2. **Real-Time Deep Learning:** Raw ECG waveforms are filtered, segmented, and evaluated by a combined 1D CNN + BiLSTM neural network trained on PhysioNet's PTB-XL benchmark dataset.
-3. **Transparent Explainable AI (XAI):** Using SHAP (SHapley Additive exPlanations), the system highlights exact millisecond regions of the ECG waveform that contributed to the diagnostic prediction (e.g., ST-segment elevation or T-wave inversion).
-4. **Context-Aware AI Companion:** An integrated LLM assistant translates complex cardiac metrics into plain-language summaries and lifestyle guidance for patients and clinicians alike.
+1. **Continuous Remote IoT Telemetry:** Patients wear a lightweight ESP32-powered wearable package that continuously captures single-lead ECG, blood oxygen (SpO2), skin temperature, stress levels (GSR), and movement, transmitting signals long-range via LoRa telemetry.
+2. **Noise Processing & Feature Engineering:** Raw signals undergo bandpass filtering, baseline wander removal, and extraction of morphological, time-domain (HRV metrics: SDNN, RMSSD), and frequency-domain features.
+3. **High-Accuracy Deep Learning (88% Accuracy):** Preprocessed ECG segments are evaluated by a hybrid **1D CNN + BiLSTM** neural network achieving 88% diagnostic accuracy trained on PhysioNet's PTB-XL benchmark dataset.
+4. **Transparent Explainable AI (SHAP Attribution):** Using SHAP (SHapley Additive exPlanations), the model quantifies the exact contribution of each feature and waveform segment (e.g., ST-segment elevation, T-wave inversion, QRS duration) toward specific disease diagnosis.
+5. **Context-Aware AI Companion:** An integrated LLM assistant translates complex cardiac metrics into plain-language summaries and lifestyle guidance for patients and clinicians alike.
 
 ---
 
 ## ✨ Features
 
-* 🫀 **Multi-Vital Telemetry Acquisition:** Captures real-time ECG (AD8232), Pulse Oximetry & HR (MAX30102), Body Temp (MLX90614), Galvanic Skin Response (Grove GSR), and Motion (MPU6050).
+* 🫀 **Multi-Vital IoT Telemetry Acquisition:** Captures real-time ECG (AD8232), Pulse Oximetry & HR (MAX30102), Body Temp (MLX90614), Galvanic Skin Response (Grove GSR), and Motion (MPU6050).
 * 📡 **Long-Range LoRa Wireless Telemetry:** Uses SX1278 transceiver pairs for robust wireless data transmission from patient wearable to local edge gateway.
-* 🧠 **1D CNN + BiLSTM Neural Architecture:** Multi-class cardiac rhythm classification into 5 primary PTB-XL diagnostic categories (`NORM`, `MI`, `CD`, `HYP`, `STTC`).
-* 🔍 **SHAP Waveform Attribution:** Generates lead-specific feature attribution maps providing full visual transparency for diagnostic predictions.
+* 🧠 **1D CNN + BiLSTM Deep Learning Model:** Multi-class cardiac rhythm classification achieving **88% Accuracy** across 5 primary diagnostic categories (`NORM`, `MI`, `CD`, `HYP`, `STTC`).
+* ⚡ **Advanced Signal Preprocessing & Feature Engineering:** Automated baseline wander elimination, bandpass noise filtering, R-peak detection, and extraction of HRV time/frequency domain metrics.
+* 🔍 **SHAP Waveform & Feature Attribution:** Quantifies and visualizes exact millisecond-level contribution of ECG regions toward disease risk scores.
 * 🤖 **Interactive AI Companion:** Context-aware LLM companion capable of answering patient queries, explaining medical terminology, and suggesting actionable risk interventions.
-* ☁️ **AWS Cloud & Dockerized Deployment:** Containerized with Docker and deployed live on AWS EC2 with FastAPI real-time streaming endpoints.
+* ☁️ **AWS Cloud & Dockerized Deployment:** Containerized with Docker and deployed live on AWS EC2 (`http://13.235.48.212:8000/`) with real-time streaming endpoints.
 * 📊 **Clinical Grade Web Dashboard:** Real-time waveform visualizer, LoRa telemetry health metrics, risk scoring, and interactive patient history logs.
 
 ---
@@ -53,50 +55,45 @@ Here is the architectural overview of how DeepCardio-XAI ingests live wearable s
 
 ![System Architecture](assets/architecture.jpg)
 
-### 1. Offline Model Training Pipeline (PTB-XL Lead II)
-Before real-time deployment, the deep learning core is trained on PhysioNet's PTB-XL 12-lead ECG dataset:
-* **Dataset Standardization:** 21,837 clinical 12-lead ECG recordings are processed, isolating **Lead II** to mirror single-lead wearable acquisition.
-* **Preprocessing & Segmentation:** ECG signals undergo bandpass noise filtering, baseline wander removal, normalization, and fixed-length window segmentation.
-* **1D CNN + BiLSTM Model:** Spatial morphological features are extracted via 1D Convolutional layers, followed by Bidirectional LSTM units to capture temporal dynamics.
-* **5 Target Classes:**
+### 1. Preprocessing, Feature Engineering & Deep Model Training
+Before real-time deployment, raw ECG data undergoes a rigorous processing pipeline:
+* **Dataset Standardization:** 21,837 clinical 12-lead ECG recordings from PTB-XL are processed, isolating **Lead II** to mirror single-lead wearable acquisition.
+* **Signal Filtering & Baseline Removal:** Digital Butterworth bandpass filtering (0.5 Hz – 40 Hz) eliminates muscle artifacts and powerline interference, while median filtering removes baseline wander.
+* **Feature Engineering:**
+  * **Time-Domain:** RR intervals, QRS duration, PR interval, QT interval, and HRV metrics (SDNN, RMSSD, pNN50).
+  * **Frequency-Domain:** Low-Frequency (LF) power, High-Frequency (HF) power, and LF/HF ratio.
+  * **Morphological Features:** Peak amplitudes of P-wave, Q-wave, R-peak, S-wave, and T-wave.
+* **1D CNN + BiLSTM Network Architecture:**
+  * **1D CNN Layers:** Extract local spatial morphological representations from raw lead II ECG waveforms.
+  * **BiLSTM Layers:** Capture temporal sequential correlations and long-range dependencies across consecutive beats.
+  * **Dense + Softmax Output:** Multi-class probability output achieving **88% Accuracy**.
+* **5 Target Diagnostic Classes:**
   * **NORM:** Normal Sinus Rhythm
   * **MI:** Myocardial Infarction
   * **CD:** Conduction Disturbance
   * **HYP:** Hypertrophy
   * **STTC:** ST/T-Wave Changes
 
-### 2. Real-Time Telemetry & Inference Execution
-When the wearable device is active:
-1. **Sensor Data Collection:** ESP32 micro-controller reads analog ECG signals alongside ambient vitals (SpO2, Temp, GSR).
-2. **LoRa Transmission:** The SX1278 transmitter broadcasts encrypted telemetry packets to the local gateway receiver.
-3. **FastAPI Cloud Backend:** The server receives the telemetry stream at `http://13.235.48.212:8000/`.
-4. **Deep Model & XAI Execution:** The backend runs real-time 1D CNN + BiLSTM classification and computes SHAP attribution values for the active signal frame.
-5. **AI Companion Context Assembly:** Telemetry metrics, risk score, and SHAP outputs are fed into the LLM context frame to answer natural language patient/doctor questions.
-6. **Live Dashboard Streaming:** Web UI renders live ECG waveforms, vitals breakdown, telemetry RSSI/SNR packet rates, and risk assessment indicators.
+### 2. Real-Time Patient Data Inference & SHAP Explainability
+When live patient data flows from the wearable device:
+1. **Live Sensor Stream:** Patient ECG waveforms, SpO2, skin temperature, and GSR telemetry are continuously streamed to the FastAPI backend.
+2. **Real-Time Classification:** The 1D CNN + BiLSTM model evaluates incoming 10-second ECG windows and computes disease risk probabilities.
+3. **SHAP Feature & Waveform Attribution:** SHAP calculates the explicit contribution of each feature and waveform segment toward the predicted disease category. For example:
+   * **ST-Segment Elevation:** High positive contribution score toward **Myocardial Infarction (MI)** prediction.
+   * **Prolonged QRS Duration:** High contribution score toward **Conduction Disturbance (CD)** prediction.
+   * **T-Wave Inversion / ST Depression:** High contribution score toward **ST/T-Wave Changes (STTC)** prediction.
+4. **AI Companion Guidance:** Risk scores and SHAP attribution metrics are packaged into prompt contexts for the LLM to deliver patient-friendly medical explanations.
 
 ---
 
-## 🔌 Hardware Architecture & Circuit Schematic
+## 🔌 Hardware Architecture & Sensor Setup
 
 The DeepCardio-XAI hardware package consists of a custom wearable sensor board powered by an ESP32 micro-controller and wireless LoRa modules.
 
 ### 📷 Hardware Setup Photo
 ![Hardware Setup](hardware/hardware_photo.png)
 
-### 📐 Circuit Schematic Diagram
-![Circuit Schematic Diagram](hardware/schematic.png)
-
-### 📌 ESP32 Pin Mapping & Component Specification
-
-| Component / Sensor Module | ESP32 Pin Connections | Interface Type | Functional Role |
-| :--- | :--- | :--- | :--- |
-| **AD8232 Single-Lead ECG** | `GPIO 34` (Output), `GPIO 35` (LO+), `GPIO 32` (LO-) | Analog ADC / Digital | Single-Lead Electrocardiogram & Electrode Disconnection |
-| **MAX30102 Pulse Oximeter** | `GPIO 21` (SDA), `GPIO 22` (SCL) | I2C | SpO2 Blood Oxygen Saturation & Optical Pulse Rate |
-| **MLX90614 Infrared Temp** | `GPIO 21` (SDA), `GPIO 22` (SCL) | I2C | Non-Contact Core Body & Ambient Temperature |
-| **Grove GSR Stress Sensor** | `GPIO 33` | Analog ADC | Electrodermal Activity & Galvanic Skin Conductance |
-| **SX1278 LoRa Transceiver** | `GPIO 5` (NSS), `GPIO 18` (SCK), `GPIO 19` (MISO), `GPIO 23` (MOSI) | SPI | 433MHz Long-Range Wireless Packet Telemetry |
-| **0.96" OLED Display** | `GPIO 21` (SDA), `GPIO 22` (SCL) | I2C | Local Real-Time Device Vitals & Status Display |
-| **TP4056 + 18650 Battery** | `VIN` / `GND` | Power Management | 3.7V Li-ion Battery Power & USB Micro Charging |
+> 📁 *Detailed circuit schematic diagrams and pinout mapping table are available in the [`hardware/`](hardware/) directory.*
 
 ---
 
@@ -127,8 +124,7 @@ Cardivascular_project/
 ├── assets/                      # System architecture, dashboard, & image assets
 │   ├── architecture.jpg         # Full system pipeline architecture diagram
 │   ├── dashboard.png            # Live web dashboard interface screenshot
-│   ├── hardware_photo.png       # Physical hardware circuit build photo
-│   └── schematic.png            # High-resolution circuit schematic diagram
+│   └── hardware_photo.png       # Physical hardware circuit build photo
 ├── firmware_v5/                 # ESP32 C++ Firmware
 │   └── firmware_v5.ino          # Arduino/ESP32 sensor acquisition & LoRa code
 ├── frontend/                    # Single Page React Application
@@ -143,17 +139,8 @@ Cardivascular_project/
 ├── main.py                      # FastAPI Backend server entry point
 ├── Dockerfile                   # Multi-stage production Docker build file
 ├── docker-compose.yml           # Docker deployment compose manifest
-├── requirements.txt             # Python backend dependencies
-└── README.md                    # Main repository documentation
+└── requirements.txt             # Python backend dependencies
 ```
-
----
-
-## 🧠 Deep Learning Architecture & XAI
-
-* **Primary Classifier:** Hybrid 1D CNN + BiLSTM Network trained on PTB-XL Lead II ECG data.
-* **Explainability Framework:** SHAP (SHapley Additive exPlanations) for local feature attribution and waveform region highlighting.
-* **AI Companion LLM:** Context-infused LLM chain providing instant medical query resolution and patient guidance.
 
 ---
 
@@ -200,8 +187,3 @@ docker-compose build
 # Start the application
 docker-compose up -d
 ```
-
----
-
-## 📜 License
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

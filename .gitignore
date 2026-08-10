@@ -39,6 +39,7 @@ AI/saved_models/shap_explainer.pkl
 
 # Node / React Frontend Dependencies & Build Caches
 frontend/node_modules/
+frontend/dist/
 frontend/.vite/
 frontend/dist-ssr/
 frontend/*.local
