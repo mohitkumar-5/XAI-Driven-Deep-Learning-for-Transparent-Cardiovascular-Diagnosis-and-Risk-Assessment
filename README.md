@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
   <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch">
   <img src="https://img.shields.io/badge/Accuracy-88%25-brightgreen?style=for-the-badge&logo=target&logoColor=white" alt="Accuracy 88%">
+  <img src="https://img.shields.io/badge/Groq_API-F55A42?style=for-the-badge&logo=groq&logoColor=white" alt="Groq API">
   <img src="https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" alt="AWS EC2">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/ESP32-000000?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32">
@@ -12,7 +13,7 @@
 </p>
 
 <p align="center">
-  <b>DeepCardio-XAI</b> is an end-to-end intelligent cardiac tele-monitoring system combining IoT wearable telemetry (LoRa + ESP32), high-accuracy deep learning (1D CNN + BiLSTM achieving <b>88% accuracy</b>), Explainable AI (SHAP waveform attribution), and an interactive clinical web platform deployed on AWS.
+  <b>DeepCardio-XAI</b> is an end-to-end intelligent cardiac tele-monitoring system combining IoT wearable telemetry (LoRa + ESP32), high-accuracy deep learning (1D CNN + BiLSTM achieving <b>88% accuracy</b>), Explainable AI (SHAP waveform attribution), Groq LLM AI Companion (Llama 3.3 70B & Whisper v3), and an interactive clinical web platform deployed on AWS.
 </p>
 
 <p align="center">
@@ -32,7 +33,7 @@ I built **DeepCardio-XAI** to solve these critical challenges by bridging **hard
 2. **Noise Processing & Feature Engineering:** Raw signals undergo bandpass filtering, baseline wander removal, and extraction of morphological, time-domain (HRV metrics: SDNN, RMSSD), and frequency-domain features.
 3. **High-Accuracy Deep Learning (88% Accuracy):** Preprocessed ECG segments are evaluated by a hybrid **1D CNN + BiLSTM** neural network achieving 88% diagnostic accuracy trained on PhysioNet's PTB-XL benchmark dataset.
 4. **Transparent Explainable AI (SHAP Attribution):** Using SHAP (SHapley Additive exPlanations), the model quantifies the exact contribution of each feature and waveform segment (e.g., ST-segment elevation, T-wave inversion, QRS duration) toward specific disease diagnosis.
-5. **Context-Aware AI Companion:** An integrated LLM assistant translates complex cardiac metrics into plain-language summaries and lifestyle guidance for patients and clinicians alike.
+5. **Context-Aware AI Companion (Groq API):** An integrated LLM assistant powered by Groq API (Llama 3.3 70B & Whisper Large v3) translates complex cardiac metrics into plain-language summaries and lifestyle guidance for patients and clinicians.
 
 ---
 
@@ -43,7 +44,7 @@ I built **DeepCardio-XAI** to solve these critical challenges by bridging **hard
 * 🧠 **1D CNN + BiLSTM Deep Learning Model:** Multi-class cardiac rhythm classification achieving **88% Accuracy** across 5 primary diagnostic categories (`NORM`, `MI`, `CD`, `HYP`, `STTC`).
 * ⚡ **Advanced Signal Preprocessing & Feature Engineering:** Automated baseline wander elimination, bandpass noise filtering, R-peak detection, and extraction of HRV time/frequency domain metrics.
 * 🔍 **SHAP Waveform & Feature Attribution:** Quantifies and visualizes exact millisecond-level contribution of ECG regions toward disease risk scores.
-* 🤖 **Interactive AI Companion:** Context-aware LLM companion capable of answering patient queries, explaining medical terminology, and suggesting actionable risk interventions.
+* 🎙️ **Multimodal AI Companion (Groq API):** Voice query input (Whisper Large v3) and text reasoning (Llama 3.3 70B) for natural conversational interaction.
 * ☁️ **AWS Cloud & Dockerized Deployment:** Containerized with Docker and deployed live on AWS EC2 (`http://13.235.48.212:8000/`) with real-time streaming endpoints.
 * 📊 **Clinical Grade Web Dashboard:** Real-time waveform visualizer, LoRa telemetry health metrics, risk scoring, and interactive patient history logs.
 
@@ -78,11 +79,18 @@ Before real-time deployment, raw ECG data undergoes a rigorous processing pipeli
 When live patient data flows from the wearable device:
 1. **Live Sensor Stream:** Patient ECG waveforms, SpO2, skin temperature, and GSR telemetry are continuously streamed to the FastAPI backend.
 2. **Real-Time Classification:** The 1D CNN + BiLSTM model evaluates incoming 10-second ECG windows and computes disease risk probabilities.
-3. **SHAP Feature & Waveform Attribution:** SHAP calculates the explicit contribution of each feature and waveform segment toward the predicted disease category. For example:
+3. **SHAP Feature & Waveform Attribution:** SHAP calculates the explicit contribution of each feature and waveform segment toward the predicted disease category:
    * **ST-Segment Elevation:** High positive contribution score toward **Myocardial Infarction (MI)** prediction.
    * **Prolonged QRS Duration:** High contribution score toward **Conduction Disturbance (CD)** prediction.
    * **T-Wave Inversion / ST Depression:** High contribution score toward **ST/T-Wave Changes (STTC)** prediction.
-4. **AI Companion Guidance:** Risk scores and SHAP attribution metrics are packaged into prompt contexts for the LLM to deliver patient-friendly medical explanations.
+
+### 3. LLM Integration & AI Companion (Groq API)
+DeepCardio-XAI integrates an intelligent multimodal conversational companion leveraging ultra-low latency **Groq Cloud Infrastructure**:
+* 🎙️ **Speech-to-Text (STT):** Powered by Groq's `whisper-large-v3-turbo` model (`https://api.groq.com/openai/v1/audio/transcriptions`). Processes microphone audio input in-memory to transcribe user voice queries accurately.
+* 🧠 **Text Reasoning LLM:** Powered by Groq's `llama-3.3-70b-versatile` model (`https://api.groq.com/openai/v1/chat/completions`).
+* ⚡ **Real-Time Context Injection & Streaming:** Injects active patient vitals (Heart Rate, SpO2, Temp, GSR), 1D CNN diagnostic risk scores, and SHAP feature attributions into system prompt contexts. Responses stream in real-time using Server-Sent Events (SSE).
+* 🔄 **Multi-Key Failover:** Features automatic API key rotation and error handling across Groq keys to ensure zero-downtime availability.
+* 🗣️ **Text-to-Speech (TTS):** Vocalized audio playback for generated LLM responses.
 
 ---
 
