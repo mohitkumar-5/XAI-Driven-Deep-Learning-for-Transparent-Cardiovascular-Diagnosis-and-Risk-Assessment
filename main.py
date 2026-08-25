@@ -687,59 +687,80 @@ async def api_chat_assistant(
         
         stream_success = False
         
-        # Try Groq streaming with multi-key failover
+        # Try Groq streaming with multi-key failover and model fallback
         if groq_keys:
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"{vitals_context}\n\nQuestion: {transcription}"}
             ]
-            payload = {
-                "model": "llama-3.3-70b-versatile",
-                "messages": messages,
-                "max_tokens": 400,
-                "temperature": 0.3,
-                "stream": True
-            }
+            groq_models = ["qwen/qwen3.6-27b", "openai/gpt-oss-120b", "groq/compound", "groq/compound-mini", "openai/gpt-oss-20b"]
             
             for key in groq_keys:
+                if stream_success:
+                    break
                 headers = {
                     "Authorization": f"Bearer {key}",
                     "Content-Type": "application/json"
                 }
-                try:
-                    async with httpx.AsyncClient() as client:
-                        async with client.stream(
-                            "POST",
-                            "https://api.groq.com/openai/v1/chat/completions",
-                            headers=headers,
-                            json=payload,
-                            timeout=30.0
-                        ) as response:
-                            if response.status_code == 200:
-                                stream_success = True
-                                async for line in response.aiter_lines():
-                                    if line.startswith("data: "):
-                                        data_str = line[6:].strip()
-                                        if data_str == "[DONE]":
-                                            break
-                                        try:
-                                            chunk_json = json.loads(data_str)
-                                            content = chunk_json.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                                            if content:
-                                                yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
-                                                # Smooth typing cadence delay
-                                                await asyncio.sleep(0.02)
-                                        except Exception:
-                                            pass
-                                break
-                            elif response.status_code in (429, 401, 403):
-                                print(f"Groq LLM key rate limited ({response.status_code}), rotating key...")
-                                continue
-                            else:
-                                print(f"Groq LLM returned status {response.status_code}")
-                except Exception as e:
-                    print(f"Groq LLM streaming exception: {e}")
-                    continue
+                for model_name in groq_models:
+                    payload = {
+                        "model": model_name,
+                        "messages": messages,
+                        "max_tokens": 1200,
+                        "temperature": 0.3,
+                        "stream": True
+                    }
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            async with client.stream(
+                                "POST",
+                                "https://api.groq.com/openai/v1/chat/completions",
+                                headers=headers,
+                                json=payload,
+                                timeout=30.0
+                            ) as response:
+                                if response.status_code == 200:
+                                    chunks_yielded = 0
+                                    in_think_block = False
+                                    async for line in response.aiter_lines():
+                                        if line.startswith("data: "):
+                                            data_str = line[6:].strip()
+                                            if data_str == "[DONE]":
+                                                break
+                                            try:
+                                                chunk_json = json.loads(data_str)
+                                                delta = chunk_json.get("choices", [{}])[0].get("delta", {})
+                                                content = delta.get("content", "")
+                                                
+                                                if content:
+                                                    # Strip out <think>...</think> internal reasoning blocks if present
+                                                    if "<think>" in content:
+                                                        in_think_block = True
+                                                        content = content.split("<think>")[0]
+                                                    if "</think>" in content:
+                                                        in_think_block = False
+                                                        content = content.split("</think>")[-1]
+                                                    elif in_think_block:
+                                                        content = ""
+                                                        
+                                                    if content:
+                                                        stream_success = True
+                                                        chunks_yielded += 1
+                                                        yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
+                                                        await asyncio.sleep(0.015)
+                                            except Exception:
+                                                pass
+                                    if chunks_yielded > 0:
+                                        break
+                                elif response.status_code in (429, 401, 403):
+                                    print(f"Groq LLM key rate limited ({response.status_code}), rotating key...")
+                                    break
+                                else:
+                                    print(f"Groq LLM model '{model_name}' returned status {response.status_code}, trying next model...")
+                                    continue
+                    except Exception as e:
+                        print(f"Groq LLM streaming exception for model '{model_name}': {e}")
+                        continue
         
         # Fallback to Hugging Face if Groq failed or wasn't available
         if not stream_success and hf_api_key:
